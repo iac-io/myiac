@@ -17,6 +17,7 @@ func main() {
 	setupEnvironment()
 	configureDocker()
 	tagDockerImage(&runtime)
+	pushDockerImage(&runtime)
 	//setupKubernetes()
 	//getPods()
 	//labelElasticsearchNodes()
@@ -84,6 +85,13 @@ func tagDockerImage(runtime *RuntimeProperties) {
 	}
 	runtime.SetDockerImage(containerFullName)
 	fmt.Printf("Docker image has been tagged with: %s\n", runtime.GetDockerImage())
+}
+
+func pushDockerImage(runtime *RuntimeProperties) {
+	fmt.Printf("Pushing previously built docker image: %s", runtime.GetDockerImage())
+	argsStr := fmt.Sprintf("%s %s", "push", runtime.GetDockerImage())
+	argsArray := strings.Fields(argsStr)
+	command("docker", argsArray)
 }
 
 func command(command string, arguments []string) error {
