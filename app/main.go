@@ -20,6 +20,7 @@ func main() {
 	//pushDockerImage(&runtime)
 	//setupKubernetes()
 	//getPods()
+	labelNodes("elasticsearch")
 	labelNodes("applications")
 	//labelDockerImage()
 }
@@ -67,7 +68,7 @@ func labelNodes(nodeType string) {
 		label = "type=applications"
 	}
 
-	labelCmdTpl := "label nodes %s %s"
+	labelCmdTpl := "label nodes %s %s --overwrite\n"
 
 	//note: range (like everything in go) copies by value the slice
 	for _, nodeName := range nodeNames {
