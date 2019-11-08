@@ -18,11 +18,27 @@ func main() {
 	//configureDocker()
 	//tagDockerImage(&runtime)
 	//pushDockerImage(&runtime)
+
 	//setupKubernetes()
 	//getPods()
-	labelNodes("elasticsearch")
-	labelNodes("applications")
+	//labelNodes("elasticsearch")
+	//labelNodes("applications")
 	//labelDockerImage()
+
+	// --- MoneyCol server ---
+	basePath := getHomeDir() + "/development/repos/moneycol/server/deploy"
+	appName := "moneycol-server"
+	chartPath := fmt.Sprintf("%s/%s/chart", basePath, appName)
+	moneyColServerDeploy := Deployment{AppName: appName, ChartPath: chartPath, DryRun: false}
+	deployApp(&moneyColServerDeploy)
+
+	// --- Traefik ---
+	//chartPath = "stable/traefik"
+	//--set dashboard.enabled=true,dashboard.domain=dashboard.localhost
+	//traefikDeploy := Deployment{AppName: appName, ChartPath: chartPath, DryRun: false}
+	//traefikDeploy.SetParams = "dashboard.enabled=true,dashboard.domain=dashboard.localhost"
+
+	//deployApp(&traefikDeploy)
 }
 
 func setupEnvironment() {
@@ -89,11 +105,13 @@ func configureDocker() {
 }
 
 func tagDockerImage(runtime *RuntimeProperties) {
-	imageToTag := "c58e8ce1a62e"
+	imageToTag := "280fbf6191c0"
+	commit := "0a8cfa9"
 	projectId := "moneycol"
 	projectRepository := "gcr.io"
 	containerName := "moneycol-server"
-	tag := "0.1.0-alpha1"
+	version := "0.1.0"
+	tag := fmt.Sprintf("%s-%s", version, commit)
 	containerFullName := fmt.Sprintf("%s/%s/%s:%s", projectRepository, projectId, containerName, tag)
 	fmt.Printf("The image tag to push is: %s\n", containerFullName)
 	dockerTagCmdPart := "tag"
@@ -109,7 +127,7 @@ func tagDockerImage(runtime *RuntimeProperties) {
 }
 
 func pushDockerImage(runtime *RuntimeProperties) {
-	fmt.Printf("Pushing previously built docker image: %s", runtime.GetDockerImage())
+	fmt.Printf("Pushing previously built docker image: %s\n", runtime.GetDockerImage())
 	argsStr := fmt.Sprintf("%s %s", "push", runtime.GetDockerImage())
 	argsArray := strings.Fields(argsStr)
 	command("docker", argsArray)
@@ -137,6 +155,22 @@ func getHomeDir() string {
 	return usr.HomeDir
 }
 
+func deployApp(deployment *Deployment) {
+	cmdExec := "helm"
+
+	//argsTpl := "install %s"
+	argsTpl := "upgrade solemn-fly %s"
+
+	argsStr := fmt.Sprintf(argsTpl, deployment.ChartPath)
+
+	if len(deployment.SetParams) != 0 {
+		argsStr = fmt.Sprintf("%s --set %s", argsStr, deployment.SetParams)
+	}
+
+	argsArray := strings.Fields(argsStr)
+	command(cmdExec, argsArray)
+}
+
 // ------------------- separate this -----
 
 type RuntimeProperties struct {
@@ -149,4 +183,13 @@ func (rp *RuntimeProperties) SetDockerImage(dockerImage string) {
 
 func (rp RuntimeProperties) GetDockerImage() string {
 	return rp.DockerImage
+}
+
+// --
+//https://stackoverflow.com/questions/37135193/how-to-set-default-values-in-go-structs
+type Deployment struct {
+	AppName   string
+	ChartPath string
+	DryRun    bool
+	SetParams string
 }
