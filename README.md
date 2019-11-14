@@ -15,3 +15,14 @@ go build -o $GOPATH/bin/myiac github.com/dfernandezm/myiac/app
 myiac
 ```
 
+if not, the main package would be used as executable:
+
+```
+go install github.com/dfernandezm/myiac/app
+app
+```
+
+## Golang tutorials
+
+* Structs as classes: https://golangbot.com/structs-instead-of-classes/
+* Go packages: https://www.callicoder.com/golang-packages/

@@ -7,6 +7,9 @@ import (
 	"os/exec"
 	"os/user"
 	"strings"
+
+	"github.com/dfernandezm/myiac/app/commandline"
+	"github.com/dfernandezm/myiac/app/gcp"
 )
 
 //https://blog.kowalczyk.info/article/wOYk/advanced-command-execution-in-go-with-osexec.html
@@ -14,8 +17,10 @@ import (
 func main() {
 	fmt.Printf("MyIaC - Infrastructure as Code\n")
 	//runtime := RuntimeProperties{}
-	setupEnvironment()
-	//configureDocker()
+
+	gcp.SetupEnvironment()
+	gcp.ConfigureDocker()
+	
 	//tagDockerImage(&runtime)
 	//pushDockerImage(&runtime)
 
@@ -26,11 +31,11 @@ func main() {
 	//labelDockerImage()
 
 	// --- MoneyCol server ---
-	basePath := getHomeDir() + "/development/repos/moneycol/server/deploy"
-	appName := "moneycol-server"
-	chartPath := fmt.Sprintf("%s/%s/chart", basePath, appName)
-	moneyColServerDeploy := Deployment{AppName: appName, ChartPath: chartPath, DryRun: false}
-	deployApp(&moneyColServerDeploy)
+	// basePath := getHomeDir() + "/development/repos/moneycol/server/deploy"
+	// appName := "moneycol-server"
+	// chartPath := fmt.Sprintf("%s/%s/chart", basePath, appName)
+	// moneyColServerDeploy := Deployment{AppName: appName, ChartPath: chartPath, DryRun: false}
+	// deployApp(&moneyColServerDeploy)
 
 	// --- Traefik ---
 	//chartPath = "stable/traefik"
@@ -39,6 +44,18 @@ func main() {
 	//traefikDeploy.SetParams = "dashboard.enabled=true,dashboard.domain=dashboard.localhost"
 
 	//deployApp(&traefikDeploy)
+}
+
+func setupEnvironmentNew() {
+	// create a service account and download it:
+	keyLocation := getHomeDir() + "/account.json"
+
+	baseArgs := "auth activate-service-account --key-file %s"
+	baseArgsTmpl := fmt.Sprintf(baseArgs, keyLocation)
+	var argsArray []string = strings.Fields(baseArgsTmpl)
+
+	cmd := commandline.New("gcloud", argsArray)
+	cmd.Run()
 }
 
 func setupEnvironment() {
@@ -96,13 +113,13 @@ func labelNodes(nodeType string) {
 
 }
 
-func configureDocker() {
-	action := "auth configure-docker"
-	cmdTpl := "%s"
-	argsStr := fmt.Sprintf(cmdTpl, action)
-	argsArray := strings.Fields(argsStr)
-	command("gcloud", argsArray)
-}
+// func configureDocker() {
+// 	action := "auth configure-docker"
+// 	cmdTpl := "%s"
+// 	argsStr := fmt.Sprintf(cmdTpl, action)
+// 	argsArray := strings.Fields(argsStr)
+// 	command("gcloud", argsArray)
+// }
 
 func tagDockerImage(runtime *RuntimeProperties) {
 	imageToTag := "280fbf6191c0"

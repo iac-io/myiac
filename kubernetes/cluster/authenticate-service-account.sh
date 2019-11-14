@@ -14,3 +14,6 @@ kubectl get secret ${SECRET} -o json | jq -Mr '.data["ca.crt"]' | base64 -D > /t
 # Get the API Server location
 export APISERVER=https://$(kubectl -n default get endpoints kubernetes --no-headers | awk '{ print $2 }')
 echo "curl -i --cacert /tmp/ca.crt $APISERVER --header 'Authorization: Bearer $TOKEN"
+
+# Example of proxied service
+# http://localhost:8001/api/v1/namespaces/default/services/moneycol-server:80/proxy/graphql
