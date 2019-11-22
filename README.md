@@ -26,3 +26,6 @@ app
 
 * Structs as classes: https://golangbot.com/structs-instead-of-classes/
 * Go packages: https://www.callicoder.com/golang-packages/
+* Run commands: https://blog.kowalczyk.info/article/wOYk/advanced-command-execution-in-go-with-osexec.html
+* Code style: https://golang.org/doc/code.html
+* Constructors and initializing structs: https://stackoverflow.com/questions/37135193/how-to-set-default-values-in-go-structs

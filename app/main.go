@@ -1,6 +1,5 @@
 package main
 
-//% go build -o $GOPATH/bin/myiac github.com/dfernandezm/myiac/app
 import (
 	"fmt"
 	"log"
@@ -8,26 +7,23 @@ import (
 	"os/user"
 	"strings"
 
-	"github.com/dfernandezm/myiac/app/commandline"
 	"github.com/dfernandezm/myiac/app/gcp"
 )
 
-//https://blog.kowalczyk.info/article/wOYk/advanced-command-execution-in-go-with-osexec.html
-//https://golang.org/doc/code.html
 func main() {
 	fmt.Printf("MyIaC - Infrastructure as Code\n")
 	//runtime := RuntimeProperties{}
 
 	gcp.SetupEnvironment()
-	gcp.ConfigureDocker()
-	
+	//gcp.ConfigureDocker()
+
 	//tagDockerImage(&runtime)
 	//pushDockerImage(&runtime)
 
-	//setupKubernetes()
+	setupKubernetes()
 	//getPods()
-	//labelNodes("elasticsearch")
-	//labelNodes("applications")
+	labelNodes("elasticsearch")
+	labelNodes("applications")
 	//labelDockerImage()
 
 	// --- MoneyCol server ---
@@ -44,18 +40,6 @@ func main() {
 	//traefikDeploy.SetParams = "dashboard.enabled=true,dashboard.domain=dashboard.localhost"
 
 	//deployApp(&traefikDeploy)
-}
-
-func setupEnvironmentNew() {
-	// create a service account and download it:
-	keyLocation := getHomeDir() + "/account.json"
-
-	baseArgs := "auth activate-service-account --key-file %s"
-	baseArgsTmpl := fmt.Sprintf(baseArgs, keyLocation)
-	var argsArray []string = strings.Fields(baseArgsTmpl)
-
-	cmd := commandline.New("gcloud", argsArray)
-	cmd.Run()
 }
 
 func setupEnvironment() {
@@ -112,14 +96,6 @@ func labelNodes(nodeType string) {
 	}
 
 }
-
-// func configureDocker() {
-// 	action := "auth configure-docker"
-// 	cmdTpl := "%s"
-// 	argsStr := fmt.Sprintf(cmdTpl, action)
-// 	argsArray := strings.Fields(argsStr)
-// 	command("gcloud", argsArray)
-// }
 
 func tagDockerImage(runtime *RuntimeProperties) {
 	imageToTag := "280fbf6191c0"
@@ -202,8 +178,6 @@ func (rp RuntimeProperties) GetDockerImage() string {
 	return rp.DockerImage
 }
 
-// --
-//https://stackoverflow.com/questions/37135193/how-to-set-default-values-in-go-structs
 type Deployment struct {
 	AppName   string
 	ChartPath string
