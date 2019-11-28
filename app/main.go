@@ -6,24 +6,36 @@ import (
 	"os/exec"
 	"os/user"
 	"strings"
-
+	"github.com/dfernandezm/myiac/app/docker"
 	"github.com/dfernandezm/myiac/app/gcp"
+	props "github.com/dfernandezm/myiac/app/properties"
+)
+
+const (
+	projectId            = "moneycol"
+	projectRepositoryUrl = "gcr.io"
 )
 
 func main() {
 	fmt.Printf("MyIaC - Infrastructure as Code\n")
-	//runtime := RuntimeProperties{}
+	runtime := props.NewRuntime()
+	dockerProps := props.DockerProperties{ProjectRepoUrl: projectRepositoryUrl, ProjectId: projectId}
 
 	gcp.SetupEnvironment()
-	//gcp.ConfigureDocker()
+	gcp.ConfigureDocker()
 
-	//tagDockerImage(&runtime)
-	//pushDockerImage(&runtime)
+	imageId := "af898a99ee67"
+	commitHash := "bb9c6a4"
+	appName := "moneycol-frontend"
+	version := "0.1.0"
 
-	setupKubernetes()
+	docker.TagImage(&runtime, &dockerProps, imageId, commitHash, appName, version)
+	docker.PushImage(&runtime)
+
+	//setupKubernetes()
 	//getPods()
-	labelNodes("elasticsearch")
-	labelNodes("applications")
+	//labelNodes("elasticsearch")
+	//labelNodes("applications")
 	//labelDockerImage()
 
 	// --- MoneyCol server ---
@@ -37,19 +49,20 @@ func main() {
 	//chartPath = "stable/traefik"
 	//--set dashboard.enabled=true,dashboard.domain=dashboard.localhost
 	//traefikDeploy := Deployment{AppName: appName, ChartPath: chartPath, DryRun: false}
-	//traefikDeploy.SetParams = "dashboard.enabled=true,dashboard.domain=dashboard.localhost"
+	//traefikDeploy.HelmSetParams = "dashboard.enabled=true,dashboard.domain=dashboard.localhost"
 
 	//deployApp(&traefikDeploy)
 }
 
-func setupEnvironment() {
-	// create a service account and download it:
-	keyLocation := getHomeDir() + "/account.json"
-	baseArgs := "auth activate-service-account --key-file %s"
-	baseArgsTmpl := fmt.Sprintf(baseArgs, keyLocation)
-	var argsArray []string = strings.Fields(baseArgsTmpl)
-	command("gcloud", argsArray)
-}
+// commit hash: git rev-parse HEAD | cut -c1-7
+// func tagDockerImageNew(runtimeProperties *props.RuntimeProperties, imageId string, commitHash string, imageRepo string, appVersion string) {
+// 	img := docker.NewImageDefinition(projectRepositoryUrl, projectId, imageId, commitHash, imageRepo, appVersion)
+// 	img.TagImage(runtimeProperties)
+// }
+
+// func pushDockerImageNew(runtimeProperties *props.RuntimeProperties) {
+// 	docker.PushImage()
+// }
 
 func getPods() {
 	baseArgs := "get pods"
@@ -94,29 +107,6 @@ func labelNodes(nodeType string) {
 		argsArray := strings.Fields(argsStr)
 		command("kubectl", argsArray)
 	}
-
-}
-
-func tagDockerImage(runtime *RuntimeProperties) {
-	imageToTag := "280fbf6191c0"
-	commit := "0a8cfa9"
-	projectId := "moneycol"
-	projectRepository := "gcr.io"
-	containerName := "moneycol-server"
-	version := "0.1.0"
-	tag := fmt.Sprintf("%s-%s", version, commit)
-	containerFullName := fmt.Sprintf("%s/%s/%s:%s", projectRepository, projectId, containerName, tag)
-	fmt.Printf("The image tag to push is: %s\n", containerFullName)
-	dockerTagCmdPart := "tag"
-	argsStr := fmt.Sprintf("%s %s %s\n", dockerTagCmdPart, imageToTag, containerFullName)
-	argsArray := strings.Fields(argsStr)
-	fmt.Printf("Array of args %s\n", argsArray)
-	err := command("docker", argsArray)
-	if err != nil {
-		log.Fatalf("Command '%s' failed with error %s\n", "docker "+argsStr, err)
-	}
-	runtime.SetDockerImage(containerFullName)
-	fmt.Printf("Docker image has been tagged with: %s\n", runtime.GetDockerImage())
 }
 
 func pushDockerImage(runtime *RuntimeProperties) {
@@ -156,8 +146,8 @@ func deployApp(deployment *Deployment) {
 
 	argsStr := fmt.Sprintf(argsTpl, deployment.ChartPath)
 
-	if len(deployment.SetParams) != 0 {
-		argsStr = fmt.Sprintf("%s --set %s", argsStr, deployment.SetParams)
+	if len(deployment.HelmSetParams) != 0 {
+		argsStr = fmt.Sprintf("%s --set %s", argsStr, deployment.HelmSetParams)
 	}
 
 	argsArray := strings.Fields(argsStr)
@@ -182,5 +172,5 @@ type Deployment struct {
 	AppName   string
 	ChartPath string
 	DryRun    bool
-	SetParams string
+	HelmSetParams string
 }

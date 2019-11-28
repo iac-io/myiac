@@ -4,38 +4,36 @@ import (
 	"fmt"
 
 	"github.com/dfernandezm/myiac/app/commandline"
-	"github.com/dfernandezm/myiac/app/properties"
+	p "github.com/dfernandezm/myiac/app/properties"
 	"github.com/dfernandezm/myiac/app/util"
 )
 
 const TAG_CMD_PART = "tag"
 const BUILD_IMAGE_PART = "build"
+const PUSH_IMAGE_PART = "push"
 
-type dockerImageDefinition struct {
-	projectId            string
-	projectRepositoryUrl string
-	imageIdToTag         string
-	commitHash           string
-	imageRepoName        string
-	version              string
+func TagImage(runtimeProperties *p.RuntimeProperties, dockerProps *p.DockerProperties, imageId string, commitHash string, imageRepo string, appVersion string) {
+	fullImageDefinition := generateTag(dockerProps.ProjectRepoUrl, dockerProps.ProjectId, imageRepo, appVersion, commitHash)
+	fmt.Printf("Full image definition is %s\n", fullImageDefinition)
+	fmt.Printf("Image id to tag is %s\n", imageId)
+	runDockerTagCmd(TAG_CMD_PART, imageId, fullImageDefinition)
+	runtimeProperties.SetDockerImage(fullImageDefinition)
 }
 
-func NewImageDefinition(projectRepoUrl string, projectId string, imageId string,
-	commitHash string, imageRepoName string, version string) dockerImageDefinition {
-	//TODO: pass in all params
-	return dockerImageDefinition{}
+func PushImage(runtime *p.RuntimeProperties) {
+	dockerImage := runtime.GetDockerImage()
+	fmt.Printf("Pushing previously built docker image: %s\n", dockerImage)
+	runDockerPushCmd(dockerImage)
 }
 
-func (di *dockerImageDefinition) TagImage(runtimeProps *properties.RuntimeProperties) {
-	fullImageDefinition := generateTag(di.projectRepositoryUrl, di.projectId, di.imageRepoName, di.version, di.commitHash)
-	runDockerTagCmd(TAG_CMD_PART, di.imageIdToTag, fullImageDefinition)
-	runtimeProps.SetDockerImage(fullImageDefinition)
+func BuildImage(buildPath string) {
+
 }
 
 func generateTag(projectRepoUrl string, projectId string, imageRepoName string, version string, commitHash string) string {
 	tag := fmt.Sprintf("%s-%s", version, commitHash)
 	fullImageDefinition := fmt.Sprintf("%s/%s/%s:%s", projectRepoUrl, projectId, imageRepoName, tag)
-	fmt.Printf("The image tag to push is: %s\n", fullImageDefinition)
+	fmt.Printf("The image to push is: %s\n", fullImageDefinition)
 	return fullImageDefinition
 }
 
@@ -46,11 +44,9 @@ func runDockerTagCmd(tagCmdPart string, imageId string, fullImageDefinition stri
 	fmt.Printf("Docker image has been tagged with: %s\n", fullImageDefinition)
 }
 
-type dockerBuildImageDefinition struct {
-	buildPath string
-	tag       string
-}
-
-func BuildImage(buildPath string, tag string) {
-
+func runDockerPushCmd(imageToPush string) {
+	argsArray := util.StringTemplateToArgsArray("%s %s", PUSH_IMAGE_PART, imageToPush)
+	cmd := commandline.New("docker", argsArray)
+	cmd.Run()
+	fmt.Printf("Docker image %s has been pushed successfully\n", cmd)
 }
