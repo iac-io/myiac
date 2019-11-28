@@ -13,7 +13,7 @@ const BUILD_IMAGE_PART = "build"
 const PUSH_IMAGE_PART = "push"
 
 func TagImage(runtimeProperties *p.RuntimeProperties, dockerProps *p.DockerProperties, imageId string, commitHash string, imageRepo string, appVersion string) {
-	fullImageDefinition := generateTag(dockerProps.ProjectRepoUrl, dockerProps.ProjectId, imageRepo, appVersion, commitHash)
+	fullImageDefinition := GenerateTag(dockerProps.ProjectRepoUrl, dockerProps.ProjectId, imageRepo, appVersion, commitHash)
 	fmt.Printf("Full image definition is %s\n", fullImageDefinition)
 	fmt.Printf("Image id to tag is %s\n", imageId)
 	runDockerTagCmd(TAG_CMD_PART, imageId, fullImageDefinition)
@@ -30,7 +30,7 @@ func BuildImage(buildPath string) {
 
 }
 
-func generateTag(projectRepoUrl string, projectId string, imageRepoName string, version string, commitHash string) string {
+func GenerateTag(projectRepoUrl string, projectId string, imageRepoName string, version string, commitHash string) string {
 	tag := fmt.Sprintf("%s-%s", version, commitHash)
 	fullImageDefinition := fmt.Sprintf("%s/%s/%s:%s", projectRepoUrl, projectId, imageRepoName, tag)
 	fmt.Printf("The image to push is: %s\n", fullImageDefinition)

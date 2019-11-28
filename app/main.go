@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"os/user"
 	"strings"
+
 	"github.com/dfernandezm/myiac/app/docker"
 	"github.com/dfernandezm/myiac/app/gcp"
 	props "github.com/dfernandezm/myiac/app/properties"
@@ -18,27 +19,27 @@ const (
 
 func main() {
 	fmt.Printf("MyIaC - Infrastructure as Code\n")
-	runtime := props.NewRuntime()
-	dockerProps := props.DockerProperties{ProjectRepoUrl: projectRepositoryUrl, ProjectId: projectId}
 
 	gcp.SetupEnvironment()
 	gcp.ConfigureDocker()
 
-	imageId := "af898a99ee67"
-	commitHash := "bb9c6a4"
-	appName := "moneycol-frontend"
-	version := "0.1.0"
+	// ------ Docker workflows  -------
+	//runtime := props.NewRuntime()
+	//dockerWorkflows(&runtime)
 
-	docker.TagImage(&runtime, &dockerProps, imageId, commitHash, appName, version)
-	docker.PushImage(&runtime)
-
+	// --- Various kubernetes setups ---
 	//setupKubernetes()
 	//getPods()
 	//labelNodes("elasticsearch")
 	//labelNodes("applications")
 	//labelDockerImage()
 
+	// --- MoneyCol frontend ---
+	// deployMoneyColFrontend()
+
 	// --- MoneyCol server ---
+	deployMoneyColServer()
+
 	// basePath := getHomeDir() + "/development/repos/moneycol/server/deploy"
 	// appName := "moneycol-server"
 	// chartPath := fmt.Sprintf("%s/%s/chart", basePath, appName)
@@ -63,6 +64,37 @@ func main() {
 // func pushDockerImageNew(runtimeProperties *props.RuntimeProperties) {
 // 	docker.PushImage()
 // }
+
+func dockerWorkflows(runtime *props.RuntimeProperties) {
+	imageId := "eed04596379d"
+	commitHash := "e7f7b61"
+	appName := "moneycol-server"
+	version := "0.1.0"
+	dockerProps := props.DockerProperties{ProjectRepoUrl: projectRepositoryUrl, ProjectId: projectId}
+
+	docker.TagImage(runtime, &dockerProps, imageId, commitHash, appName, version)
+	docker.PushImage(runtime)
+}
+
+func deployMoneyColFrontend() {
+	releaseName := "exasperated-alligator"
+	moneycolPath := "/development/repos/moneycol/"
+	basePath := getHomeDir() + moneycolPath + "frontend/deploy"
+	appName := "moneycolfrontend"
+	chartPath := fmt.Sprintf("%s/%s/chart", basePath, appName)
+	moneyColFrontendDeploy := Deployment{AppName: appName, ChartPath: chartPath, DryRun: false, HelmReleaseName: releaseName}
+	deployApp(&moneyColFrontendDeploy)
+}
+
+func deployMoneyColServer() {
+	releaseName := "mollified-olm"
+	moneycolPath := "/development/repos/moneycol/"
+	basePath := getHomeDir() + moneycolPath + "server/deploy"
+	appName := "moneycolserver"
+	chartPath := fmt.Sprintf("%s/%s/chart", basePath, appName)
+	moneyColServerDeploy := Deployment{AppName: appName, ChartPath: chartPath, DryRun: false, HelmReleaseName: releaseName}
+	deployApp(&moneyColServerDeploy)
+}
 
 func getPods() {
 	baseArgs := "get pods"
@@ -141,8 +173,12 @@ func getHomeDir() string {
 func deployApp(deployment *Deployment) {
 	cmdExec := "helm"
 
-	//argsTpl := "install %s"
-	argsTpl := "upgrade solemn-fly %s"
+	var argsTpl = ""
+	if deployment.HelmReleaseName == "" {
+		argsTpl = "install %s"
+	} else {
+		argsTpl = "upgrade " + deployment.HelmReleaseName + " %s"
+	}
 
 	argsStr := fmt.Sprintf(argsTpl, deployment.ChartPath)
 
@@ -169,8 +205,9 @@ func (rp RuntimeProperties) GetDockerImage() string {
 }
 
 type Deployment struct {
-	AppName   string
-	ChartPath string
-	DryRun    bool
-	HelmSetParams string
+	AppName         string
+	ChartPath       string
+	DryRun          bool
+	HelmSetParams   string
+	HelmReleaseName string
 }
