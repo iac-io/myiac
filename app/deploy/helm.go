@@ -1,0 +1,5 @@
+package deploy
+
+func Install() {
+	
+}

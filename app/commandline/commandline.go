@@ -12,15 +12,26 @@ type commandExec struct {
 	executable    string
 	arguments     []string
 	commandOutput string
+	workingDir string
 }
 
 func New(executable string, arguments []string) commandExec {
-	ce := commandExec{executable, arguments, ""}
+	ce := commandExec{executable, arguments, "", ""}
 	return ce
 }
 
-func (c commandExec) Run() {
+func NewWithWorkingDir(executable string, arguments []string, workingDir string) commandExec {
+	ce := commandExec{executable, arguments, "", workingDir}
+	return ce
+}
+
+func (c commandExec) Run() commandExec {
 	cmd := exec.Command(c.executable, c.arguments...)
+
+	if (c.workingDir != "") {
+		cmd.Dir = c.workingDir
+	}
+	
 	cmdStr := string(strings.Join(cmd.Args, " "))
 	fmt.Printf("Executing [ %s ]\n", cmdStr)
 
@@ -30,6 +41,7 @@ func (c commandExec) Run() {
 	}
 
 	c.saveOutput(output)
+	return c
 }
 
 func (c commandExec) Output() string {

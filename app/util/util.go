@@ -1,9 +1,12 @@
 package util
 
 import (
+	"path/filepath"
 	"fmt"
 	"log"
+	"os"
 	"os/user"
+	"os/exec"
 	"strings"
 )
 
@@ -12,6 +15,28 @@ import (
 func StringTemplateToArgsArray(templatedArgs string, values ...string) []string {
 	baseArgsTmpl := fmt.Sprintf(templatedArgs, stringToInterfaceArrays(values)...)
 	return strings.Fields(baseArgsTmpl)
+}
+
+func LookupPathFor(executable string) (string, error) {
+	path, err := exec.LookPath(".")
+	return path, err
+}
+
+func CurrentExecutableDir() string {
+	
+	executable, err := os.Executable()
+	if err != nil {
+		log.Fatalf("Error getting the directory of this executable %s", err)
+	}
+
+	location, err := filepath.Abs(filepath.Dir(executable))
+
+	if (err != nil) {
+		log.Fatalf("Error getting the directory of this executable %s", err)
+	}
+
+	fmt.Printf("This executable full path directory is: %s\n", location)
+	return location
 }
 
 func GetHomeDir() string {

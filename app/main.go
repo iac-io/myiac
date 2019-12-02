@@ -7,12 +7,16 @@ import (
 	"os/user"
 	"strings"
 
+	//"github.com/dfernandezm/myiac/app/cluster"
 	"github.com/dfernandezm/myiac/app/docker"
 	"github.com/dfernandezm/myiac/app/gcp"
 	props "github.com/dfernandezm/myiac/app/properties"
 )
 
 const (
+	project              = "moneycol"
+	clusterZone          = "europe-west1-b"
+	environment          = "dev"
 	projectId            = "moneycol"
 	projectRepositoryUrl = "gcr.io"
 )
@@ -20,8 +24,12 @@ const (
 func main() {
 	fmt.Printf("MyIaC - Infrastructure as Code\n")
 
+
 	gcp.SetupEnvironment()
 	gcp.ConfigureDocker()
+	gcp.SetupKubernetes("moneycol", "europe-west1-b", "dev")
+	//cluster.InstallHelm()
+	deployApps()
 
 	// ------ Docker workflows  -------
 	//runtime := props.NewRuntime()
@@ -33,26 +41,6 @@ func main() {
 	//labelNodes("elasticsearch")
 	//labelNodes("applications")
 	//labelDockerImage()
-
-	// --- MoneyCol frontend ---
-	// deployMoneyColFrontend()
-
-	// --- MoneyCol server ---
-	deployMoneyColServer()
-
-	// basePath := getHomeDir() + "/development/repos/moneycol/server/deploy"
-	// appName := "moneycol-server"
-	// chartPath := fmt.Sprintf("%s/%s/chart", basePath, appName)
-	// moneyColServerDeploy := Deployment{AppName: appName, ChartPath: chartPath, DryRun: false}
-	// deployApp(&moneyColServerDeploy)
-
-	// --- Traefik ---
-	//chartPath = "stable/traefik"
-	//--set dashboard.enabled=true,dashboard.domain=dashboard.localhost
-	//traefikDeploy := Deployment{AppName: appName, ChartPath: chartPath, DryRun: false}
-	//traefikDeploy.HelmSetParams = "dashboard.enabled=true,dashboard.domain=dashboard.localhost"
-
-	//deployApp(&traefikDeploy)
 }
 
 // commit hash: git rev-parse HEAD | cut -c1-7
@@ -66,8 +54,8 @@ func main() {
 // }
 
 func dockerWorkflows(runtime *props.RuntimeProperties) {
-	imageId := "eed04596379d"
-	commitHash := "e7f7b61"
+	imageId := "b63a014d5aa6"
+	commitHash := "9ff9cd6"
 	appName := "moneycol-server"
 	version := "0.1.0"
 	dockerProps := props.DockerProperties{ProjectRepoUrl: projectRepositoryUrl, ProjectId: projectId}
@@ -76,8 +64,32 @@ func dockerWorkflows(runtime *props.RuntimeProperties) {
 	docker.PushImage(runtime)
 }
 
+func deployApps() {
+	// -- Elasticsearch ---
+	//deployElasticsearch()
+
+	// --- MoneyCol server ---
+	deployMoneyColServer()
+
+	// --- MoneyCol frontend ---
+	deployMoneyColFrontend()
+
+	// --- Traefik ---
+	//deployTraefik()
+}
+
+func deployTraefik() {
+	releaseName := ""
+	moneycolPath := "/development/repos/moneycol/"
+	basePath := getHomeDir() + moneycolPath + "server/deploy"
+	appName := "traefik"
+	chartPath := fmt.Sprintf("%s/%s/chart", basePath, appName)
+	deployment := Deployment{AppName: appName, ChartPath: chartPath, DryRun: false, HelmReleaseName: releaseName}
+	deployApp(&deployment)
+}
+
 func deployMoneyColFrontend() {
-	releaseName := "exasperated-alligator"
+	releaseName := "esteemed-peacock"
 	moneycolPath := "/development/repos/moneycol/"
 	basePath := getHomeDir() + moneycolPath + "frontend/deploy"
 	appName := "moneycolfrontend"
@@ -86,8 +98,18 @@ func deployMoneyColFrontend() {
 	deployApp(&moneyColFrontendDeploy)
 }
 
+func deployElasticsearch() {
+	releaseName := ""
+	moneycolPath := "/development/repos/moneycol/"
+	basePath := getHomeDir() + moneycolPath + "server/deploy"
+	appName := "elasticsearch"
+	chartPath := fmt.Sprintf("%s/%s/chart", basePath, appName)
+	elasticsearchDeploy := Deployment{AppName: appName, ChartPath: chartPath, DryRun: false, HelmReleaseName: releaseName}
+	deployApp(&elasticsearchDeploy)
+}
+
 func deployMoneyColServer() {
-	releaseName := "mollified-olm"
+	releaseName := "ponderous-lion"
 	moneycolPath := "/development/repos/moneycol/"
 	basePath := getHomeDir() + moneycolPath + "server/deploy"
 	appName := "moneycolserver"
@@ -141,13 +163,6 @@ func labelNodes(nodeType string) {
 	}
 }
 
-func pushDockerImage(runtime *RuntimeProperties) {
-	fmt.Printf("Pushing previously built docker image: %s\n", runtime.GetDockerImage())
-	argsStr := fmt.Sprintf("%s %s", "push", runtime.GetDockerImage())
-	argsArray := strings.Fields(argsStr)
-	command("docker", argsArray)
-}
-
 func command(command string, arguments []string) error {
 	cmd := exec.Command(command, arguments...)
 	//cmd.Dir = "/Users/david"
@@ -191,18 +206,6 @@ func deployApp(deployment *Deployment) {
 }
 
 // ------------------- separate this -----
-
-type RuntimeProperties struct {
-	DockerImage string
-}
-
-func (rp *RuntimeProperties) SetDockerImage(dockerImage string) {
-	rp.DockerImage = dockerImage
-}
-
-func (rp RuntimeProperties) GetDockerImage() string {
-	return rp.DockerImage
-}
 
 type Deployment struct {
 	AppName         string
