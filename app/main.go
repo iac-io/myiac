@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/dfernandezm/myiac/app/util"
 	"fmt"
 	"log"
 	"os/exec"
@@ -26,9 +27,12 @@ func main() {
 	gcp.SetupEnvironment()
 	gcp.ConfigureDocker()
 	gcp.SetupKubernetes("moneycol", "europe-west1-b", "dev")
+
+	ips := []string{"1.2.3.4", "1.2.3.4"}
+	util.BuildYamlList(ips)
 	//cluster.GetInternalIpsForNodes()
 	//cluster.InstallHelm()
-	deployApps()
+	//deployApps()
 
 	// ------ Docker workflows  -------
 	//runtime := props.NewRuntime()
@@ -87,6 +91,9 @@ func deployTraefik() {
 	//TODO: Set paramaters, separate this into helm.go
 	helmSetParams := make(map[string]string)
 	internalIps := cluster.GetInternalIpsForNodes()
+
+	//TODO: this --set does not work with helm, need to pass it as a separate --values
+	// see on how to get an array into yaml https://sharpend.io/blog/decoding-yaml-in-go/
 	internalIpsForHelmSet := "{" + strings.Join(internalIps, ",") + "}"
 	fmt.Printf("Internal IPs to set for helm are: %s", internalIpsForHelmSet)
 	helmSetParams["externalIps"] = "\"" + internalIpsForHelmSet + "\""
@@ -224,7 +231,7 @@ func deployApp(deployment *Deployment) {
 	command(cmdExec, argsArray)
 }
 
-// ------------------- separate this -----
+// --------- separate this -----
 
 type Deployment struct {
 	AppName         string
@@ -232,4 +239,6 @@ type Deployment struct {
 	DryRun          bool
 	HelmSetParams   map[string]string // key value pairs, get its own struct soon
 	HelmReleaseName string
+	HelmValuesParams string // filename
 }
+
