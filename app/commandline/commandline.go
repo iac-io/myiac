@@ -31,7 +31,7 @@ func (c commandExec) Run() commandExec {
 	if (c.workingDir != "") {
 		cmd.Dir = c.workingDir
 	}
-	
+
 	cmdStr := string(strings.Join(cmd.Args, " "))
 	fmt.Printf("Executing [ %s ]\n", cmdStr)
 

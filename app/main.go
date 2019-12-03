@@ -7,7 +7,7 @@ import (
 	"os/user"
 	"strings"
 
-	//"github.com/dfernandezm/myiac/app/cluster"
+	"github.com/dfernandezm/myiac/app/cluster"
 	"github.com/dfernandezm/myiac/app/docker"
 	"github.com/dfernandezm/myiac/app/gcp"
 	props "github.com/dfernandezm/myiac/app/properties"
@@ -23,13 +23,12 @@ const (
 
 func main() {
 	fmt.Printf("MyIaC - Infrastructure as Code\n")
-
-
 	gcp.SetupEnvironment()
 	gcp.ConfigureDocker()
 	gcp.SetupKubernetes("moneycol", "europe-west1-b", "dev")
+	cluster.GetInternalIpsForNodes()
 	//cluster.InstallHelm()
-	deployApps()
+	//deployApps()
 
 	// ------ Docker workflows  -------
 	//runtime := props.NewRuntime()
