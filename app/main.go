@@ -26,9 +26,9 @@ func main() {
 	gcp.SetupEnvironment()
 	gcp.ConfigureDocker()
 	gcp.SetupKubernetes("moneycol", "europe-west1-b", "dev")
-	cluster.GetInternalIpsForNodes()
+	//cluster.GetInternalIpsForNodes()
 	//cluster.InstallHelm()
-	//deployApps()
+	deployApps()
 
 	// ------ Docker workflows  -------
 	//runtime := props.NewRuntime()
@@ -68,22 +68,33 @@ func deployApps() {
 	//deployElasticsearch()
 
 	// --- MoneyCol server ---
-	deployMoneyColServer()
+	//deployMoneyColServer()
 
 	// --- MoneyCol frontend ---
-	deployMoneyColFrontend()
+	//deployMoneyColFrontend()
 
 	// --- Traefik ---
-	//deployTraefik()
+	deployTraefik()
 }
 
 func deployTraefik() {
-	releaseName := ""
+	releaseName := "opining-frog"
 	moneycolPath := "/development/repos/moneycol/"
 	basePath := getHomeDir() + moneycolPath + "server/deploy"
 	appName := "traefik"
 	chartPath := fmt.Sprintf("%s/%s/chart", basePath, appName)
-	deployment := Deployment{AppName: appName, ChartPath: chartPath, DryRun: false, HelmReleaseName: releaseName}
+
+	//TODO: Set paramaters, separate this into helm.go
+	helmSetParams := make(map[string]string)
+	internalIps := cluster.GetInternalIpsForNodes()
+	internalIpsForHelmSet := "{" + strings.Join(internalIps, ",") + "}"
+	fmt.Printf("Internal IPs to set for helm are: %s", internalIpsForHelmSet)
+	helmSetParams["externalIps"] = "\"" + internalIpsForHelmSet + "\""
+
+	deployment := Deployment{AppName: appName, ChartPath: chartPath, 
+							DryRun: false, 
+							HelmReleaseName: releaseName,
+							HelmSetParams: helmSetParams}
 	deployApp(&deployment)
 }
 
@@ -197,7 +208,16 @@ func deployApp(deployment *Deployment) {
 	argsStr := fmt.Sprintf(argsTpl, deployment.ChartPath)
 
 	if len(deployment.HelmSetParams) != 0 {
-		argsStr = fmt.Sprintf("%s --set %s", argsStr, deployment.HelmSetParams)
+		setParams := ""
+		for k, v := range deployment.HelmSetParams {
+			setParams += setParams + "--set " + k + "=" + v + " " 
+		}
+
+		argsStr = fmt.Sprintf("%s %s", argsStr, setParams)
+	}
+
+	if (deployment.DryRun) {
+		argsStr += " --debug --dry-run"
 	}
 
 	argsArray := strings.Fields(argsStr)
@@ -210,6 +230,6 @@ type Deployment struct {
 	AppName         string
 	ChartPath       string
 	DryRun          bool
-	HelmSetParams   string
+	HelmSetParams   map[string]string // key value pairs, get its own struct soon
 	HelmReleaseName string
 }

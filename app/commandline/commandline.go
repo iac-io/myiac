@@ -13,15 +13,16 @@ type commandExec struct {
 	arguments     []string
 	commandOutput string
 	workingDir string
+	SupressOutput bool
 }
 
-func New(executable string, arguments []string) commandExec {
-	ce := commandExec{executable, arguments, "", ""}
+func New(executable string, arguments []string) *commandExec {
+	ce := &commandExec{executable, arguments, "", "", false}
 	return ce
 }
 
-func NewWithWorkingDir(executable string, arguments []string, workingDir string) commandExec {
-	ce := commandExec{executable, arguments, "", workingDir}
+func NewWithWorkingDir(executable string, arguments []string, workingDir string) *commandExec {
+	ce := &commandExec{executable, arguments, "", workingDir, false}
 	return ce
 }
 
@@ -35,7 +36,7 @@ func (c commandExec) Run() commandExec {
 	cmdStr := string(strings.Join(cmd.Args, " "))
 	fmt.Printf("Executing [ %s ]\n", cmdStr)
 
-	output, err := withCombinedOutput(cmd)
+	output, err := withCombinedOutput(cmd, c.SupressOutput)
 	if err != nil {
 		log.Fatalf("command [ %s ] failed with %s\n", cmdStr, err)
 	}
@@ -52,17 +53,19 @@ func (c *commandExec) saveOutput(output string) {
 	c.commandOutput = output
 }
 
-func withCombinedOutput(cmd *exec.Cmd) (string, error) {
+func withCombinedOutput(cmd *exec.Cmd, suppressOutput bool) (string, error) {
 	out, err := cmd.CombinedOutput() //TODO: get stderr and stdout in separate strings
 	outputStr := string(out)
 
+	if (!suppressOutput) {
+		fmt.Printf("Output: \n%s\n", outputStr)
+	}
+	
 	if err != nil {
-		fmt.Printf("Output: \n%s\n", string(out))
 		log.Fatalf("cmd.Run() failed with %s\n", err)
 		return "", err
 	}
 
-	fmt.Printf("Output: \n%s\n", outputStr)
 	return outputStr, nil
 }
 
