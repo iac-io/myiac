@@ -85,15 +85,15 @@ func deployApps() {
 func deployTraefik() {
 	releaseName := "opining-frog"
 	moneycolPath := "/development/repos/moneycol/"
-	basePath := getHomeDir() + moneycolPath + "server/deploy"
+	deployPath := getHomeDir() + moneycolPath + "server/deploy"
 	appName := "traefik"
-	chartPath := fmt.Sprintf("%s/%s/chart", basePath, appName)
+	chartPath := fmt.Sprintf("%s/%s/chart", deployPath, appName)
 
 	//TODO: Set paramaters, separate this into helm.go
 	helmSetParams := make(map[string]string)
 	internalIps := cluster.GetInternalIpsForNodes()
 
-	//TODO: very flaky --set for ips like this: --set externalIps={ip1\,ip2\,ip3}
+	// very flaky --set for ips like this: --set externalIps={ip1\,ip2\,ip3}
 	internalIpsForHelmSet := "{" + strings.Join(internalIps, "\\,") + "}"
 	helmSetParams["externalIps"] = internalIpsForHelmSet
 	deployment := Deployment{AppName: appName, ChartPath: chartPath, 
@@ -101,14 +101,24 @@ func deployTraefik() {
 							HelmReleaseName: releaseName,
 							HelmSetParams: helmSetParams}
 	deployApp(&deployment)
+
+	// once deployed, repoint dev DNS to any public IP of nodes
+	changeDevDns(deployPath)
+}
+
+func changeDevDns(deployPath string) {
+	publicIps := cluster.GetAllPublicIps()
+	aPublicIp := publicIps[0]
+	devDnsTfFile := deployPath + "/terraform/dns"
+	cluster.ApplyDnsIpChange(devDnsTfFile, aPublicIp)
 }
 
 func deployMoneyColFrontend() {
 	releaseName := "esteemed-peacock"
 	moneycolPath := "/development/repos/moneycol/"
-	basePath := getHomeDir() + moneycolPath + "frontend/deploy"
+	deployPath := getHomeDir() + moneycolPath + "frontend/deploy"
 	appName := "moneycolfrontend"
-	chartPath := fmt.Sprintf("%s/%s/chart", basePath, appName)
+	chartPath := fmt.Sprintf("%s/%s/chart", deployPath, appName)
 	moneyColFrontendDeploy := Deployment{AppName: appName, ChartPath: chartPath, DryRun: false, HelmReleaseName: releaseName}
 	deployApp(&moneyColFrontendDeploy)
 }
@@ -116,9 +126,9 @@ func deployMoneyColFrontend() {
 func deployElasticsearch() {
 	releaseName := ""
 	moneycolPath := "/development/repos/moneycol/"
-	basePath := getHomeDir() + moneycolPath + "server/deploy"
+	deployPath := getHomeDir() + moneycolPath + "server/deploy"
 	appName := "elasticsearch"
-	chartPath := fmt.Sprintf("%s/%s/chart", basePath, appName)
+	chartPath := fmt.Sprintf("%s/%s/chart", deployPath, appName)
 	elasticsearchDeploy := Deployment{AppName: appName, ChartPath: chartPath, DryRun: false, HelmReleaseName: releaseName}
 	deployApp(&elasticsearchDeploy)
 }
@@ -126,9 +136,9 @@ func deployElasticsearch() {
 func deployMoneyColServer() {
 	releaseName := "ponderous-lion"
 	moneycolPath := "/development/repos/moneycol/"
-	basePath := getHomeDir() + moneycolPath + "server/deploy"
+	deployPath := getHomeDir() + moneycolPath + "server/deploy"
 	appName := "moneycolserver"
-	chartPath := fmt.Sprintf("%s/%s/chart", basePath, appName)
+	chartPath := fmt.Sprintf("%s/%s/chart", deployPath, appName)
 	moneyColServerDeploy := Deployment{AppName: appName, ChartPath: chartPath, DryRun: false, HelmReleaseName: releaseName}
 	deployApp(&moneyColServerDeploy)
 }
