@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/dfernandezm/myiac/app/util"
+	
 	"fmt"
 	"log"
 	"os/exec"
@@ -12,6 +12,7 @@ import (
 	"github.com/dfernandezm/myiac/app/docker"
 	"github.com/dfernandezm/myiac/app/gcp"
 	props "github.com/dfernandezm/myiac/app/properties"
+	//"github.com/dfernandezm/myiac/app/util"
 )
 
 const (
@@ -28,11 +29,11 @@ func main() {
 	gcp.ConfigureDocker()
 	gcp.SetupKubernetes("moneycol", "europe-west1-b", "dev")
 
-	ips := []string{"1.2.3.4", "1.2.3.4"}
-	util.BuildYamlList(ips)
+	//ips := []string{"1.2.3.4", "1.2.3.4"}
+	//util.BuildYamlList(ips)
 	//cluster.GetInternalIpsForNodes()
 	//cluster.InstallHelm()
-	//deployApps()
+	deployApps()
 
 	// ------ Docker workflows  -------
 	//runtime := props.NewRuntime()
@@ -92,12 +93,9 @@ func deployTraefik() {
 	helmSetParams := make(map[string]string)
 	internalIps := cluster.GetInternalIpsForNodes()
 
-	//TODO: this --set does not work with helm, need to pass it as a separate --values
-	// see on how to get an array into yaml https://sharpend.io/blog/decoding-yaml-in-go/
-	internalIpsForHelmSet := "{" + strings.Join(internalIps, ",") + "}"
-	fmt.Printf("Internal IPs to set for helm are: %s", internalIpsForHelmSet)
-	helmSetParams["externalIps"] = "\"" + internalIpsForHelmSet + "\""
-
+	//TODO: very flaky --set for ips like this: --set externalIps={ip1\,ip2\,ip3}
+	internalIpsForHelmSet := "{" + strings.Join(internalIps, "\\,") + "}"
+	helmSetParams["externalIps"] = internalIpsForHelmSet
 	deployment := Deployment{AppName: appName, ChartPath: chartPath, 
 							DryRun: false, 
 							HelmReleaseName: releaseName,
@@ -214,12 +212,21 @@ func deployApp(deployment *Deployment) {
 
 	argsStr := fmt.Sprintf(argsTpl, deployment.ChartPath)
 
+	if len(deployment.HelmValuesParams) > 0 {
+		valuesParams := ""
+		for _, filePath := range deployment.HelmValuesParams {
+			valuesParams += valuesParams + "--values " + filePath + " "
+		}
+		valuesParams = strings.TrimSpace(valuesParams)
+		argsStr = fmt.Sprintf("%s %s", argsStr, valuesParams)
+	} 
+
 	if len(deployment.HelmSetParams) != 0 {
 		setParams := ""
 		for k, v := range deployment.HelmSetParams {
 			setParams += setParams + "--set " + k + "=" + v + " " 
 		}
-
+		setParams = strings.TrimSpace(setParams)
 		argsStr = fmt.Sprintf("%s %s", argsStr, setParams)
 	}
 
@@ -239,6 +246,6 @@ type Deployment struct {
 	DryRun          bool
 	HelmSetParams   map[string]string // key value pairs, get its own struct soon
 	HelmReleaseName string
-	HelmValuesParams string // filename
+	HelmValuesParams []string // yaml filenames to pass as --values
 }
 

@@ -25,7 +25,7 @@ func getAllInternalIps(json map[string]interface{}) []string {
 		status := util.GetJsonObject(node, "status")
 		addresses := util.GetJsonArray(status, "addresses")
 		ip := util.GetStringValue(addresses[0], "address")
-		ips = append(ips, "'"+ip+"'")
+		ips = append(ips, ip)
 	}
 	return ips
 }
