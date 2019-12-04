@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"fmt"
+	"strings"
 	"github.com/dfernandezm/myiac/app/commandline"
 	"github.com/dfernandezm/myiac/app/util"
 )
@@ -18,6 +19,13 @@ func GetAllPublicIps() []string {
 	ips := getAllIps(json, false)
 	fmt.Printf("Public IPs for nodes in cluster are: %v\n", ips)
 	return ips
+}
+
+func GetPods() {
+	baseArgs := "get pods"
+	var argsArray []string = strings.Fields(baseArgs)
+	cmd := commandline.New("kubectl", argsArray)
+	cmd.Run()
 }
 
 func executeGetIpsCmd() map[string]interface{} {
