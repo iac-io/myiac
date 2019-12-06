@@ -65,7 +65,7 @@ func setupEnvironmentCmd(projectFlag *cli.StringFlag, environmentFlag *cli.Strin
 func dockerSetupCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag) cli.Command {
 	return cli.Command{
 		Name:  "dockerSetup",
-		Usage: "Setup docker login (GCR supported)",
+		Usage: "Setup docker login with a container registry (defaults to cloud provider registry)",
 		Flags: []cli.Flag{
 			projectFlag,
 			environmentFlag,

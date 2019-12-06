@@ -8,6 +8,7 @@ import (
 
 type JSON map[string]interface{}
 
+//https://yourbasic.org/golang/json-example/
 //https://stackoverflow.com/questions/11066946/partly-json-unmarshal-into-a-map-in-go
 func Parse(jsonString string) map[string]interface{} {
 	var objmap map[string]*json.RawMessage
@@ -42,6 +43,7 @@ func getString(value interface{}) string {
 	return value.(string)
 }
 
+
 func dumpMap(space string, m map[string]interface{}) {
 	for k, v := range m {
 		if mv, ok := v.(map[string]interface{}); ok {
@@ -53,3 +55,4 @@ func dumpMap(space string, m map[string]interface{}) {
 		}
 	}
 }
+

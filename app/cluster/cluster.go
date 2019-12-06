@@ -10,7 +10,11 @@ import (
 func InstallHelm() {
 	fmt.Println("Installing Helm in newly created cluster")
 	
-	currentDir := util.CurrentExecutableDir()
+	//TODO: this should be a configurable path
+	// the directory where the binary is being executed from
+	// The script itself should be inlined, read an executed instead of 
+	// bundling a file with the binary
+	currentDir := util.CurrentExecutableDir() 
 	helperScriptsLocation := currentDir + "/.helperScripts"
 	fmt.Printf("Helper scripts path is %s", helperScriptsLocation)
 
