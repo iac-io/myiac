@@ -6,6 +6,8 @@ import (
 	"os"
 	"github.com/dfernandezm/myiac/app/gcp"
 	"github.com/dfernandezm/myiac/app/deploy"
+	"github.com/dfernandezm/myiac/app/docker"
+	props "github.com/dfernandezm/myiac/app/properties"
 	"github.com/urfave/cli"
 )
 
@@ -18,7 +20,7 @@ import (
 func BuildCli() {
 	app := cli.NewApp()
 	app.Name = "myiac"
-	app.Usage = "Infrastructure as code for deployments and cluster management"
+	app.Usage = "Infrastructure as code for Docker/Kubernetes/Helm deployments and cluster management with Terraform (GCP support for now)"
 
 	environmentFlag := &cli.StringFlag{Name: "env, e", 
 										Usage: "The environment to refer to (dev,prod)"}
@@ -27,8 +29,9 @@ func BuildCli() {
 
 	setupEnvironment := setupEnvironmentCmd(projectFlag, environmentFlag)
 	dockerSetup := dockerSetupCmd(projectFlag, environmentFlag)
+	dockerBuild := dockerBuildCmd(projectFlag)
 	deployApp := deployAppSetup(projectFlag, environmentFlag)
-	app.Commands = []*cli.Command{&setupEnvironment, &dockerSetup, &deployApp}
+	app.Commands = []*cli.Command{&setupEnvironment, &dockerSetup, &deployApp, &dockerBuild}
 
 	err := app.Run(os.Args)
   	if err != nil {
@@ -39,7 +42,7 @@ func BuildCli() {
 func setupEnvironmentCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag) cli.Command {
 	return cli.Command{
 		Name:  "setupEnvironment",
-		Usage: "Setup the environment with the cloud provider (GCP is supported at the moment)",
+		Usage: "Setup the environment with the cloud provider",
 		Flags: []cli.Flag{
 			projectFlag,
 			environmentFlag,
@@ -62,7 +65,7 @@ func setupEnvironmentCmd(projectFlag *cli.StringFlag, environmentFlag *cli.Strin
 func dockerSetupCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag) cli.Command {
 	return cli.Command{
 		Name:  "dockerSetup",
-		Usage: "Setup docker login (GCR supported at the moment)",
+		Usage: "Setup docker login (GCR supported)",
 		Flags: []cli.Flag{
 			projectFlag,
 			environmentFlag,
@@ -76,13 +79,61 @@ func dockerSetupCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag
 		},
 	}
 }
+//TODO: automate GetCommitHash (git rev-parse HEAD | cut -c1-7, --git-dir /path/to/gitdir )
+func dockerBuildCmd(projectFlag *cli.StringFlag) cli.Command {
+
+	appNameFlag := &cli.StringFlag{Name: "app, a", Usage: "The container to build. Should match a repo name in registry and a Helm chart folder naming convention (moneycol-server, moneycol-frontend...)"}
+
+	buildPathFlag := &cli.StringFlag{Name: "buildPath, bp",
+									Usage: "The location of the Dockerfile"}
+	commitHashFlag :=  &cli.StringFlag{Name: "commit, ch",
+										Usage: "The 7 digit commit hash for the tag"}
+	versionFlag :=  &cli.StringFlag{Name: "version, ch",
+										Usage: "The version to be built (semver major.minor.patch)"}
+
+	
+	return cli.Command{
+		Name:  "dockerBuild",
+		Usage: "Build a docker image, tag it and push it to registry",
+		Flags: []cli.Flag{
+			projectFlag,
+			buildPathFlag,
+			appNameFlag,
+			versionFlag,
+			commitHashFlag,
+		},
+		Action: func(c *cli.Context) error {
+			validateStringFlagPresence("project", c)
+			validateStringFlagPresence("buildPath", c)
+			validateStringFlagPresence("version", c)
+			validateStringFlagPresence("app", c)
+
+			fmt.Printf("dockerBuild with flags\n")
+			gcp.SetupEnvironment()
+			gcp.ConfigureDocker()
+
+			project := c.String("project") 
+			buildPath := c.String("buildPath")
+			appName := c.String("app")
+			version := c.String("version")
+			commit := c.String("commit")
+			
+			runtime := props.NewRuntime()
+			dockerProps := props.DockerProperties{ProjectRepoUrl: "gcr.io", ProjectId: project}
+			docker.BuildImage(&runtime, buildPath, &dockerProps, commit, appName, version)
+			docker.PushImage(&runtime)
+			return nil
+		},
+	}
+}
+
 
 func deployAppSetup(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag) cli.Command {
 	appNameFlag := &cli.StringFlag{Name: "app, a", Usage: "The app to deploy. A helm chart with the same name must exist in the CHARTS_LOCATION"}
 
 	return cli.Command{
 		Name:  "deploy",
-		Usage: "Setup docker login (GCR supported at the moment)",
+		Usage: "Deploy an app (defined as a Helm chart from a Docker image) into a Kubernetes cluster in a given environment",
 		Flags: []cli.Flag{
 			projectFlag,
 			environmentFlag,

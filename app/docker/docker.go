@@ -24,10 +24,14 @@ func PushImage(runtime *p.RuntimeProperties) {
 	dockerImage := runtime.GetDockerImage()
 	fmt.Printf("Pushing previously built docker image: %s\n", dockerImage)
 	runDockerPushCmd(dockerImage)
+	runtime.SetDockerImage("")
 }
 
-func BuildImage(buildPath string) {
-
+func BuildImage(runtime *p.RuntimeProperties, buildPath string, dockerProps *p.DockerProperties, commitHash string, imageRepo string, appVersion string) {
+	fullImageDefinition := GenerateTag(dockerProps.ProjectRepoUrl, dockerProps.ProjectId, imageRepo, appVersion, commitHash)
+	fmt.Printf("Full image definition to build is %s\n", fullImageDefinition)
+	runDockerBuildCmd("build", buildPath, fullImageDefinition)
+	runtime.SetDockerImage(fullImageDefinition)
 }
 
 func GenerateTag(projectRepoUrl string, projectId string, imageRepoName string, version string, commitHash string) string {
@@ -35,6 +39,13 @@ func GenerateTag(projectRepoUrl string, projectId string, imageRepoName string, 
 	fullImageDefinition := fmt.Sprintf("%s/%s/%s:%s", projectRepoUrl, projectId, imageRepoName, tag)
 	fmt.Printf("The image to push is: %s\n", fullImageDefinition)
 	return fullImageDefinition
+}
+
+func runDockerBuildCmd(buildCmdPart string, buildPath string, fullImageDefinition string) {
+	argsArray := util.StringTemplateToArgsArray("%s %s -t %s", buildCmdPart, buildPath, fullImageDefinition)
+	cmd := commandline.New("docker", argsArray)
+	cmd.Run()
+	fmt.Printf("Docker image has been built: %s\n", fullImageDefinition)
 }
 
 func runDockerTagCmd(tagCmdPart string, imageId string, fullImageDefinition string) {
