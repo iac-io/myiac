@@ -1,27 +1,27 @@
 package deploy
 
 import (
-	"github.com/dfernandezm/myiac/app/util"
-	"github.com/dfernandezm/myiac/app/commandline"
 	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
+	"github.com/dfernandezm/myiac/app/util"
+	"github.com/dfernandezm/myiac/app/commandline"
 )
 
 //https://quii.gitbook.io/learn-go-with-tests/go-fundamentals/mocking
 type Release struct {
-	Name string
-	Revision int
-	Updated string
-	Status string
-	Chart string
+	Name       string
+	Revision   int
+	Updated    string
+	Status     string
+	Chart      string
 	AppVersion string
-	Namespace string
+	Namespace  string
 }
 
 type ReleasesList struct {
-	Next string
+	Next     string
 	Releases []Release
 }
 
@@ -31,8 +31,8 @@ func ReleaseDeployedForApp(appName string) string {
 		appNameIsPartOfChart := strings.Contains(strings.ToLower(release.Chart), appName)
 		if appNameIsPartOfChart && release.Status == "DEPLOYED" {
 			// It exists with the given name
-			fmt.Printf("Release for app %s found. Name: %s, Status %s, Chart: %s", 
-						appName, release.Name, release.Status, release.Chart)
+			fmt.Printf("Release for app %s found. Name: %s, Status %s, Chart: %s",
+				appName, release.Name, release.Status, release.Chart)
 			return release.Name
 		}
 	}
@@ -42,7 +42,7 @@ func ReleaseDeployedForApp(appName string) string {
 
 func ListReleases() ReleasesList {
 	cmdArgs := "list %s %s"
-	argsArray := util.StringTemplateToArgsArray(cmdArgs,"--output", "json")
+	argsArray := util.StringTemplateToArgsArray(cmdArgs, "--output", "json")
 	cmd := commandline.New("helm", argsArray)
 	cmdResult := cmd.Run()
 	cmdOutputJson := cmdResult.Output()
@@ -55,7 +55,7 @@ func parse(jsonString string) ReleasesList {
 	jsonData := []byte(jsonString)
 	err := json.Unmarshal(jsonData, &listReleases)
 	if err != nil {
-    	log.Fatalf("Error parsing json to struct %v %v", jsonData, err)
+		log.Fatalf("Error parsing json to struct %v %v", jsonData, err)
 	}
 	return listReleases
 }

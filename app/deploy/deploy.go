@@ -49,7 +49,7 @@ func deployApps(environment string) {
 
 func deployMoneyColFrontend() {
 	//TODO: read releases first, get parameters for chart paths
-	releaseName := "esteemed-peacock"
+	releaseName := ReleaseDeployedForApp("moneycolfrontend")
 	moneycolPath := "/development/repos/moneycol/"
 	deployPath := util.GetHomeDir() + moneycolPath + "frontend/deploy"
 	appName := "moneycolfrontend"
@@ -60,7 +60,7 @@ func deployMoneyColFrontend() {
 }
 
 func deployElasticsearch() {
-	releaseName := ""
+	releaseName := ReleaseDeployedForApp("elasticsearch")
 	moneycolPath := "/development/repos/moneycol/"
 	deployPath := util.GetHomeDir() + moneycolPath + "server/deploy"
 	appName := "elasticsearch"
@@ -71,7 +71,7 @@ func deployElasticsearch() {
 }
 
 func deployMoneyColServer() {
-	releaseName := "ponderous-lion"
+	releaseName := ReleaseDeployedForApp("moneycolserver")
 	moneycolPath := "/development/repos/moneycol/"
 	deployPath := util.GetHomeDir() + moneycolPath + "server/deploy"
 	appName := "moneycolserver"
@@ -82,7 +82,7 @@ func deployMoneyColServer() {
 }
 
 func deployTraefik(environment string) {
-	releaseName := "opining-frog"
+	releaseName := ReleaseDeployedForApp("traefik")
 	moneycolPath := "/development/repos/moneycol/"
 	deployPath := util.GetHomeDir() + moneycolPath + "server/deploy"
 	appName := "traefik"
