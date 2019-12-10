@@ -16,6 +16,11 @@ type commandExec struct {
 	SupressOutput bool
 }
 
+func NewEmpty() *commandExec {
+	ce := &commandExec{"", make([]string,0), "", "", false}
+	return ce
+}
+
 func New(executable string, arguments []string) *commandExec {
 	ce := &commandExec{executable, arguments, "", "", false}
 	return ce
@@ -24,6 +29,15 @@ func New(executable string, arguments []string) *commandExec {
 func NewWithWorkingDir(executable string, arguments []string, workingDir string) *commandExec {
 	ce := &commandExec{executable, arguments, "", workingDir, false}
 	return ce
+}
+
+func (c *commandExec) Setup(executable string, arguments[]string) {
+	c.executable = executable
+	c.arguments = arguments 
+}
+
+func (c *commandExec) SetWorkingDir(workingDir string) {
+	c.workingDir = workingDir
 }
 
 func (c commandExec) Run() commandExec {
@@ -44,6 +58,10 @@ func (c commandExec) Run() commandExec {
 
 	c.saveOutput(output)
 	return c
+}
+
+func (c commandExec) RunVoid() {
+	c.Run()
 }
 
 func (c commandExec) Output() string {
