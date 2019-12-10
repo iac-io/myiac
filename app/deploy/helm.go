@@ -6,7 +6,6 @@ import (
 	"log"
 	"strings"
 	"github.com/dfernandezm/myiac/app/util"
-	"github.com/dfernandezm/myiac/app/commandline"
 )
 
 //https://quii.gitbook.io/learn-go-with-tests/go-fundamentals/mocking
@@ -22,16 +21,36 @@ type Release struct {
 
 type ReleasesList struct {
 	Next     string
-	Releases []Release
+	Releases []Release // using pointer as it becomes mutable (useful for tests)
 }
 
-func ReleaseDeployedForApp(appName string) string {
-	releasesList := ListReleases()
+// Implicit interface for commandline package, need access to those methods here
+type CommandRunner interface {
+	RunVoid()
+	Output() string
+	Setup(cmd string, args []string)
+}
+
+type helmDeployer struct {
+	releases ReleasesList
+	cmdRunner CommandRunner
+}
+
+func NewHelmDeployer(commandRunner CommandRunner) helmDeployer {
+	return helmDeployer{ReleasesList{}, commandRunner}
+}
+
+func (hd *helmDeployer) DeployedReleasesExistsFor(appName string) bool {
+	return hd.ReleaseFor(appName) != ""
+}
+
+func (hd *helmDeployer) ReleaseFor(appName string) string {
+	releasesList := hd.ListReleases()
 	for _, release := range releasesList.Releases {
 		appNameIsPartOfChart := strings.Contains(strings.ToLower(release.Chart), appName)
 		if appNameIsPartOfChart && release.Status == "DEPLOYED" {
 			// It exists with the given name
-			fmt.Printf("Release for app %s found. Name: %s, Status %s, Chart: %s",
+			fmt.Printf("Release for app %s found. Name: %s, Status %s, Chart: %s\n",
 				appName, release.Name, release.Status, release.Chart)
 			return release.Name
 		}
@@ -40,17 +59,19 @@ func ReleaseDeployedForApp(appName string) string {
 	return ""
 }
 
-func ListReleases() ReleasesList {
+func (hd *helmDeployer) ListReleases() ReleasesList {
 	cmdArgs := "list %s %s"
 	argsArray := util.StringTemplateToArgsArray(cmdArgs, "--output", "json")
-	cmd := commandline.New("helm", argsArray)
-	cmdResult := cmd.Run()
-	cmdOutputJson := cmdResult.Output()
-	listReleases := parse(cmdOutputJson)
+	hd.cmdRunner.Setup("helm", argsArray)
+	hd.cmdRunner.RunVoid()
+	cmdOutputJson := hd.cmdRunner.Output()
+	// cmdResult := cmd.Run()
+	// cmdOutputJson := cmdResult.Output()
+	listReleases := hd.ParseReleasesList(cmdOutputJson)
 	return listReleases
 }
 
-func parse(jsonString string) ReleasesList {
+func (hd *helmDeployer) ParseReleasesList(jsonString string) ReleasesList {
 	var listReleases ReleasesList
 	jsonData := []byte(jsonString)
 	err := json.Unmarshal(jsonData, &listReleases)

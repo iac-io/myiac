@@ -48,8 +48,9 @@ func deployApps(environment string) {
 }
 
 func deployMoneyColFrontend() {
-	//TODO: read releases first, get parameters for chart paths
-	releaseName := ReleaseDeployedForApp("moneycolfrontend")
+	cmdRunner := commandline.NewEmpty()
+	helmDeployer := NewHelmDeployer(cmdRunner)
+	releaseName := helmDeployer.ReleaseFor("moneycolfrontend")
 	moneycolPath := "/development/repos/moneycol/"
 	deployPath := util.GetHomeDir() + moneycolPath + "frontend/deploy"
 	appName := "moneycolfrontend"
@@ -60,7 +61,9 @@ func deployMoneyColFrontend() {
 }
 
 func deployElasticsearch() {
-	releaseName := ReleaseDeployedForApp("elasticsearch")
+	cmdRunner := commandline.NewEmpty()
+	helmDeployer := NewHelmDeployer(cmdRunner)
+	releaseName := helmDeployer.ReleaseFor("elasticsearch")
 	moneycolPath := "/development/repos/moneycol/"
 	deployPath := util.GetHomeDir() + moneycolPath + "server/deploy"
 	appName := "elasticsearch"
@@ -71,7 +74,9 @@ func deployElasticsearch() {
 }
 
 func deployMoneyColServer() {
-	releaseName := ReleaseDeployedForApp("moneycolserver")
+	cmdRunner := commandline.NewEmpty()
+	helmDeployer := NewHelmDeployer(cmdRunner)
+	releaseName := helmDeployer.ReleaseFor("moneycolserver")
 	moneycolPath := "/development/repos/moneycol/"
 	deployPath := util.GetHomeDir() + moneycolPath + "server/deploy"
 	appName := "moneycolserver"
@@ -82,7 +87,9 @@ func deployMoneyColServer() {
 }
 
 func deployTraefik(environment string) {
-	releaseName := ReleaseDeployedForApp("traefik")
+	cmdRunner := commandline.NewEmpty()
+	helmDeployer := NewHelmDeployer(cmdRunner)
+	releaseName := helmDeployer.ReleaseFor("traefik")
 	moneycolPath := "/development/repos/moneycol/"
 	deployPath := util.GetHomeDir() + moneycolPath + "server/deploy"
 	appName := "traefik"
