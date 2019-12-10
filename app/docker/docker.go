@@ -59,5 +59,5 @@ func runDockerPushCmd(imageToPush string) {
 	argsArray := util.StringTemplateToArgsArray("%s %s", PUSH_IMAGE_PART, imageToPush)
 	cmd := commandline.New("docker", argsArray)
 	cmd.Run()
-	fmt.Printf("Docker image %s has been pushed successfully\n", cmd)
+	fmt.Printf("Docker image %s has been pushed successfully\n", imageToPush)
 }

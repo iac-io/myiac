@@ -21,7 +21,7 @@ type Release struct {
 
 type ReleasesList struct {
 	Next     string
-	Releases []Release // using pointer as it becomes mutable (useful for tests)
+	Releases []*Release // using pointer as it becomes mutable (useful for tests)
 }
 
 // Implicit interface for commandline package, need access to those methods here

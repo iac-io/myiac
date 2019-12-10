@@ -3,7 +3,6 @@ package deploy
 import (
 	"testing"
 	"encoding/json"
-	"fmt"
 	//"github.com/stretchr/testify/assert"
 	//"github.com/stretchr/testify/require"
 )
@@ -83,7 +82,7 @@ func TestReleaseDeployed(t *testing.T) {
 }
 
 func TestReleaseHasFailed(t *testing.T) {
-	commandRunner := &mockCommandRunner{output: EXISTING_RELEASES_OUTPUT}
+	commandRunner := &mockCommandRunner{output: ""}
 	d := NewHelmDeployer(commandRunner)
 
 	// Given: a release (2nd one) has failed status

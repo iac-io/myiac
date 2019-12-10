@@ -40,7 +40,7 @@ func (c *commandExec) SetWorkingDir(workingDir string) {
 	c.workingDir = workingDir
 }
 
-func (c commandExec) Run() commandExec {
+func (c *commandExec) Run() *commandExec {
 	cmd := exec.Command(c.executable, c.arguments...)
 
 	if (c.workingDir != "") {
@@ -60,8 +60,10 @@ func (c commandExec) Run() commandExec {
 	return c
 }
 
-func (c commandExec) RunVoid() {
-	c.Run()
+func (c *commandExec) RunVoid() {
+	// Important: for this delegation to work properly and save the output, we need to 
+	// pass in a pointer, which is what ultimately gets modified in the 'saveOutput' method
+	c.Run() 
 }
 
 func (c commandExec) Output() string {
