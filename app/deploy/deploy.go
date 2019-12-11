@@ -3,6 +3,7 @@ package deploy
 import (
 	"fmt"
 	"strings"
+	"os"
 	"github.com/dfernandezm/myiac/app/cluster"
 	"github.com/dfernandezm/myiac/app/commandline"
 	"github.com/dfernandezm/myiac/app/util"
@@ -93,7 +94,10 @@ func deployTraefik(environment string) {
 	moneycolPath := "/development/repos/moneycol/"
 	deployPath := util.GetHomeDir() + moneycolPath + "server/deploy"
 	appName := "traefik"
-	chartPath := fmt.Sprintf("%s/%s/chart", deployPath, appName)
+
+	baseChartsPath := getBaseChartsPath()
+	chartPath := fmt.Sprintf("%s/%s", baseChartsPath, appName)
+	//chartPath := fmt.Sprintf("%s/%s/chart", deployPath, appName)
 
 	//TODO: Set paramaters, separate this
 	helmSetParams := make(map[string]string)
@@ -113,6 +117,16 @@ func deployTraefik(environment string) {
 		// once deployed, repoint dev DNS to any public IP of nodes
 		changeDevDns(deployPath)
 	}
+}
+
+func getBaseChartsPath() string {
+	chartsPath := os.Getenv("CHARTS_PATH")
+	if chartsPath != "" {
+		return chartsPath
+	}
+	
+	chartsPath = util.CurrentExecutableDir() + "/charts"
+	return chartsPath
 }
 
 func changeDevDns(deployPath string) {

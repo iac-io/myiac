@@ -15,7 +15,7 @@ func InstallHelm() {
 	// The script itself should be inlined, read an executed instead of 
 	// bundling a file with the binary
 	currentDir := util.CurrentExecutableDir() 
-	helperScriptsLocation := currentDir + "/.helperScripts"
+	helperScriptsLocation := currentDir + "/helperScripts"
 	fmt.Printf("Helper scripts path is %s", helperScriptsLocation)
 
 	action := "./install-helm.sh"

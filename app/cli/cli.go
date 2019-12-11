@@ -48,6 +48,7 @@ func setupEnvironmentCmd(projectFlag *cli.StringFlag, environmentFlag *cli.Strin
 			environmentFlag,
 		},
 		Action: func(c *cli.Context) error {
+			fmt.Printf("Validating flags for setupEnvironment\n")
 			validateBaseFlags(c)
 			fmt.Printf("setupEnvironment running with flags\n")
 			gcp.SetupEnvironment()
@@ -163,15 +164,13 @@ func setupEnvironmentFromContext(c *cli.Context) {
 }
 
 func validateBaseFlags(ctx *cli.Context) error {
-	project := ctx.String("project")
-	validateStringFlagPresence(project, ctx)
+	project := validateStringFlagPresence("project", ctx)
 	
 	if (project != "moneycol") {
 		return cli.NewExitError("Project not supported: " + project, -1)
 	}
 	
-	env := ctx.String("env")
-	validateStringFlagPresence(env, ctx)
+	env := validateStringFlagPresence("env", ctx)
 
 	if (env != "dev") {
 		return cli.NewExitError("Invalid environment: " + env, -1)
@@ -180,13 +179,16 @@ func validateBaseFlags(ctx *cli.Context) error {
 	return nil
 }
 
-func validateStringFlagPresence(flagName string, ctx *cli.Context) error {
+func validateStringFlagPresence(flagName string, ctx *cli.Context) string {
+	fmt.Printf("Validating flag %s", flagName)
 	flag := ctx.String(flagName)
+	fmt.Printf("Read flag %s as %s", flagName, flag)
 
 	if flag == "" {
 		errorMsg := fmt.Sprintf("%s parameter not provided", flag)
-		return cli.NewExitError(errorMsg, -1)
+		cli.NewExitError(errorMsg, -1)
+		return "" 
 	}
 
-	return nil
+	return flag
 }
