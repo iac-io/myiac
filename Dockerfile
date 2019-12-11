@@ -23,6 +23,9 @@ RUN wget https://get.helm.sh/helm-v2.16.1-linux-amd64.tar.gz && \
     mv linux-amd64/helm /usr/bin
 
 # https://stackoverflow.com/questions/49955097/how-do-i-add-a-user-when-im-using-alpine-as-a-base-image
+RUN apk add util-linux
+ADD manage-startup-script.sh /
+
 RUN addgroup -S app && adduser -S app -G app -h /home/app
 USER app
 RUN mkdir -p /home/app
@@ -31,3 +34,5 @@ COPY --from=myiac-builder /go/bin/myiac .
 COPY --chown=app:app account.json .
 COPY --chown=app:app helperScripts helperScripts
 COPY --chown=app:app charts charts
+
+CMD /manage-startup-script.sh
