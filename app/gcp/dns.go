@@ -23,11 +23,12 @@ type GoogleCloudDNSState struct {
 
 // NewGoogleCloudDNSService Creates a GCP cloud dns service
 // zone is the managedZone name (should've been created beforehand)
-func NewGoogleCloudDNSService(project, zone string) *GoogleCloudDNSService {
+func NewGoogleCloudDNSService(project, zone, keyFileLocation string) *GoogleCloudDNSService {
 
-	log.Debug().Msgf("Creating new GoogleCloudDNSService for project %v and zone %v", project, zone)
+	fmt.Printf("Creating new GoogleCloudDNSService for project %v and zone %v with key %s", project, zone, keyFileLocation)
 
 	ctx := context.Background()
+	google.DefaultClient()
 	googleClient, err := google.DefaultClient(ctx, dns.NdevClouddnsReadwriteScope)
 
 	if err != nil {

@@ -96,8 +96,6 @@ func deployTraefik(environment string) {
 	cmdRunner := commandline.NewEmpty()
 	helmDeployer := NewHelmDeployer(cmdRunner)
 	releaseName := helmDeployer.ReleaseFor("traefik")
-	moneycolPath := "/development/repos/moneycol/"
-	deployPath := util.GetHomeDir() + moneycolPath + "server/deploy"
 	appName := "traefik"
 
 	baseChartsPath := getBaseChartsPath()
@@ -122,7 +120,7 @@ func deployTraefik(environment string) {
 		deployTraefikDev()
 
 		// once deployed, repoint dev DNS to any public IP of nodes
-		changeDevDNS(deployPath)
+		changeDevDNS()
 	}
 }
 
