@@ -120,7 +120,7 @@ func deployTraefik(environment string) {
 	
 	if (environment == "dev") {
 		deployTraefikDev()
-		
+
 		// once deployed, repoint dev DNS to any public IP of nodes
 		changeDevDNS(deployPath)
 	}
@@ -146,6 +146,7 @@ func deployTraefikDev() {
 		HelmSetParams:   helmSetParams}
 
 	deployApp(&deployment)
+	changeDevDNS()
 }
 
 func getBaseChartsPath() string {
@@ -158,18 +159,21 @@ func getBaseChartsPath() string {
 	return chartsPath
 }
 
-func changeDevDNS(deployPath string) {
+func changeDevDNS() {
 	publicIps := cluster.GetAllPublicIps()
 	aPublicIP := publicIps[0] // any public ip works for this
 	applyDNSThroughSdk(aPublicIP)
 }
 
 func applyDNSThroughSdk(newIP string) {
+	fmt.Printf("Applying changes to DNS for new IP: %s", newIP)
 	dnsService := gcp.NewGoogleCloudDNSService("moneycol","money-zone-free")
 	dnsService.UpsertDNSRecord("A", "dev.moneycol.ml", newIP)
 }
 
-func applyDNSUsingTerraform(deployPath, newIP string) {
+func applyDNSUsingTerraform(newIP string) {
+	moneycolPath := "/development/repos/moneycol/"
+	deployPath := util.GetHomeDir() + moneycolPath + "server/deploy"
 	devDNSTfFile := deployPath + "/terraform/dns"
 	cluster.ApplyDnsIpChange(devDNSTfFile, newIP)
 }

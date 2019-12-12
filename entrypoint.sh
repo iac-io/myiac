@@ -10,6 +10,7 @@ set -o pipefail
 # Defined in the chart
 # CHECK_INTERVAL_SECONDS="30"
 # EXEC=(nsenter -t 1 -m -u -i -n -p --)
+
 CHECKPOINT_PATH="/tmp/foo"
 
 echo "====== Startup script Daemonset ====="
