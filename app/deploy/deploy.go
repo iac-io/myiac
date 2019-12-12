@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"os"
+	"github.com/dfernandezm/myiac/app/gcp"
 	"github.com/dfernandezm/myiac/app/cluster"
 	"github.com/dfernandezm/myiac/app/commandline"
 	"github.com/dfernandezm/myiac/app/util"
@@ -38,6 +39,10 @@ func DeployApp(appName string, environment string) {
 
 	if appName == "traefik" {
 		deployTraefik(environment)
+	}
+
+	if appName == "traefik-dev" {
+		deployTraefikDev()
 	}
 }
 
@@ -114,9 +119,33 @@ func deployTraefik(environment string) {
 	deployApp(&deployment)
 	
 	if (environment == "dev") {
+		deployTraefikDev()
+		
 		// once deployed, repoint dev DNS to any public IP of nodes
-		changeDevDns(deployPath)
+		changeDevDNS(deployPath)
 	}
+}
+
+func deployTraefikDev() {
+	cmdRunner := commandline.NewEmpty()
+	helmDeployer := NewHelmDeployer(cmdRunner)
+	releaseName := helmDeployer.ReleaseFor("traefik-dev")
+	appName := "traefik-dev"
+	baseChartsPath := getBaseChartsPath()
+	chartPath := fmt.Sprintf("%s/%s", baseChartsPath, appName)
+
+	helmSetParams := make(map[string]string)
+	internalIps := cluster.GetInternalIpsForNodes()
+
+	// very flaky --set for ips like this: --set externalIps={ip1\,ip2\,ip3}
+	internalIpsForHelmSet := "{" + strings.Join(internalIps, "\\,") + "}"
+	helmSetParams["externalIps"] = internalIpsForHelmSet
+	deployment := Deployment{AppName: appName, ChartPath: chartPath,
+		DryRun:          false,
+		HelmReleaseName: releaseName,
+		HelmSetParams:   helmSetParams}
+
+	deployApp(&deployment)
 }
 
 func getBaseChartsPath() string {
@@ -124,16 +153,25 @@ func getBaseChartsPath() string {
 	if chartsPath != "" {
 		return chartsPath
 	}
-	
+
 	chartsPath = util.CurrentExecutableDir() + "/charts"
 	return chartsPath
 }
 
-func changeDevDns(deployPath string) {
+func changeDevDNS(deployPath string) {
 	publicIps := cluster.GetAllPublicIps()
-	aPublicIp := publicIps[0] // any public ip works for this
-	devDnsTfFile := deployPath + "/terraform/dns"
-	cluster.ApplyDnsIpChange(devDnsTfFile, aPublicIp)
+	aPublicIP := publicIps[0] // any public ip works for this
+	applyDNSThroughSdk(aPublicIP)
+}
+
+func applyDNSThroughSdk(newIP string) {
+	dnsService := gcp.NewGoogleCloudDNSService("moneycol","money-zone-free")
+	dnsService.UpsertDNSRecord("A", "dev.moneycol.ml", newIP)
+}
+
+func applyDNSUsingTerraform(deployPath, newIP string) {
+	devDNSTfFile := deployPath + "/terraform/dns"
+	cluster.ApplyDnsIpChange(devDNSTfFile, newIP)
 }
 
 func deployApp(deployment *Deployment) {
