@@ -15,12 +15,6 @@ type GoogleCloudDNSService struct {
 	zone    string
 }
 
-type GoogleCloudDNSState struct {
-	Enabled   string `json:"enabled"`
-	Hostnames string `json:"hostnames"`
-	IPAddress string `json:"ipAddress"`
-}
-
 // NewGoogleCloudDNSService Creates a GCP cloud dns service
 // zone is the managedZone name (should've been created beforehand)
 func NewGoogleCloudDNSService(project, zone string) *GoogleCloudDNSService {

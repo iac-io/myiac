@@ -57,10 +57,10 @@ func deployMoneyColFrontend() {
 	cmdRunner := commandline.NewEmpty()
 	helmDeployer := NewHelmDeployer(cmdRunner)
 	releaseName := helmDeployer.ReleaseFor("moneycolfrontend")
-	moneycolPath := "/development/repos/moneycol/"
-	deployPath := util.GetHomeDir() + moneycolPath + "frontend/deploy"
+	
 	appName := "moneycolfrontend"
-	chartPath := fmt.Sprintf("%s/%s/chart", deployPath, appName)
+	baseChartsPath := getBaseChartsPath()
+	chartPath := fmt.Sprintf("%s/%s", baseChartsPath, appName)
 	moneyColFrontendDeploy := Deployment{AppName: appName, ChartPath: chartPath, 
 								DryRun: false, HelmReleaseName: releaseName}
 	deployApp(&moneyColFrontendDeploy)
@@ -70,10 +70,11 @@ func deployElasticsearch() {
 	cmdRunner := commandline.NewEmpty()
 	helmDeployer := NewHelmDeployer(cmdRunner)
 	releaseName := helmDeployer.ReleaseFor("elasticsearch")
-	moneycolPath := "/development/repos/moneycol/"
-	deployPath := util.GetHomeDir() + moneycolPath + "server/deploy"
+	
 	appName := "elasticsearch"
-	chartPath := fmt.Sprintf("%s/%s/chart", deployPath, appName)
+	baseChartsPath := getBaseChartsPath()
+	chartPath := fmt.Sprintf("%s/%s", baseChartsPath, appName)
+	
 	elasticsearchDeploy := Deployment{AppName: appName, ChartPath: chartPath, 
 										DryRun: false, HelmReleaseName: releaseName}
 	deployApp(&elasticsearchDeploy)
@@ -83,10 +84,11 @@ func deployMoneyColServer() {
 	cmdRunner := commandline.NewEmpty()
 	helmDeployer := NewHelmDeployer(cmdRunner)
 	releaseName := helmDeployer.ReleaseFor("moneycolserver")
-	moneycolPath := "/development/repos/moneycol/"
-	deployPath := util.GetHomeDir() + moneycolPath + "server/deploy"
 	appName := "moneycolserver"
-	chartPath := fmt.Sprintf("%s/%s/chart", deployPath, appName)
+
+	baseChartsPath := getBaseChartsPath()
+	chartPath := fmt.Sprintf("%s/%s", baseChartsPath, appName)
+
 	moneyColServerDeploy := Deployment{AppName: appName, ChartPath: chartPath, 
 										DryRun: false, HelmReleaseName: releaseName}
 	deployApp(&moneyColServerDeploy)
@@ -100,8 +102,7 @@ func deployTraefik(environment string) {
 
 	baseChartsPath := getBaseChartsPath()
 	chartPath := fmt.Sprintf("%s/%s", baseChartsPath, appName)
-	//chartPath := fmt.Sprintf("%s/%s/chart", deployPath, appName)
-
+	
 	//TODO: Set paramaters, separate this
 	helmSetParams := make(map[string]string)
 	internalIps := cluster.GetInternalIpsForNodes()
