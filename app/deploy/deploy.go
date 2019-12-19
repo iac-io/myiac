@@ -19,6 +19,8 @@ type Deployment struct {
 	HelmValuesParams []string // yaml filenames to pass as --values
 }
 
+// DeployApp deploys the given appName into the given environment
+// A helm chart folder named appName must exist in charts base path
 func DeployApp(appName string, environment string) {
 	//TODO: generify
 	if appName == "all" {
