@@ -2,19 +2,15 @@ package cluster
 
 import (
 	"fmt"
-	"strings"
 	"github.com/dfernandezm/myiac/app/commandline"
 	"github.com/dfernandezm/myiac/app/util"
+	"time"
 )
 
 func InstallHelm() {
 	fmt.Println("Installing Helm in newly created cluster")
-	
-	//TODO: this should be a configurable path
-	// the directory where the binary is being executed from
-	// The script itself should be inlined, read an executed instead of 
-	// bundling a file with the binary
-	currentDir := util.CurrentExecutableDir() 
+
+	currentDir := util.CurrentExecutableDir()
 	helperScriptsLocation := currentDir + "/helperScripts"
 	fmt.Printf("Helper scripts path is %s", helperScriptsLocation)
 
@@ -23,32 +19,47 @@ func InstallHelm() {
 	cmd.Run()
 }
 
-//unused: delete
-func labelNodes(nodeType string) {
-	//slice vs array: https://blog.golang.org/go-slices-usage-and-internals
-	var nodeNames []string
-	var label string
-	nodeNamesEs := []string{"gke-moneycol-main-elasticsearch-pool-b8711571-k359"}
-	nodeNamesApps := []string{"gke-moneycol-main-main-pool-ac0c4442-57ff",
-		"gke-moneycol-main-main-pool-ac0c4442-pq57",
-		"gke-moneycol-main-main-pool-ac0c4442-q1t7"}
+func InitTerraform() {
+	currentDir := util.CurrentExecutableDir()
+	initScriptLocation := currentDir + "/terraform"
+	initScript := "./init.sh"
 
-	if nodeType == "elasticsearch" {
-		nodeNames = nodeNamesEs
-		label = "type=elasticsearch"
-	} else if nodeType == "applications" {
-		nodeNames = nodeNamesApps
-		label = "type=applications"
-	}
+	cmd := commandline.NewWithWorkingDir(initScript, []string{}, initScriptLocation)
+	cmd.Run()
+}
 
-	labelCmdTpl := "label nodes %s %s --overwrite\n"
+func CreateCluster() {
+	currentDir := util.CurrentExecutableDir()
+	tfFileLocation := currentDir + "/terraform/cluster"
 
-	//note: range (like everything in go) copies by value the slice
-	for _, nodeName := range nodeNames {
-		argsStr := fmt.Sprintf(labelCmdTpl, nodeName, label)
-		fmt.Printf("Labelling args: %s", argsStr)
-		argsArray := strings.Fields(argsStr)
-		c := commandline.New("kubectl", argsArray)
-		c.Run()
-	}
+	varFileLoc := tfFileLocation + "/cluster.tfvars"
+	argsArray := util.StringTemplateToArgsArray("%s %s", "plan", "-var-file="+varFileLoc)
+	cmd := commandline.NewWithWorkingDir("terraform", argsArray, tfFileLocation)
+	cmd.Run()
+
+	argsArray = util.StringTemplateToArgsArray("%s %s %s", "apply", "-var-file="+varFileLoc, "-auto-approve")
+	cmd = commandline.NewWithWorkingDir("terraform", argsArray, tfFileLocation)
+	cmd.Run()
+
+	fmt.Printf("Kubernetes cluster created through Terraform from %s\n", tfFileLocation)
+
+	fmt.Printf("Installing Helm into newly created cluster...")
+
+	InstallHelm()
+}
+
+func DestroyCluster() {
+	currentDir := util.CurrentExecutableDir()
+
+	tfFileLocation := currentDir + "/terraform/cluster"
+	varFileLoc := tfFileLocation + "/cluster.tfvars"
+
+	fmt.Println("Waiting 5 seconds before destroying cluster...")
+	time.Sleep(5 * time.Second)
+
+	argsArray := util.StringTemplateToArgsArray("%s %s %s", "destroy", "-var-file=" + varFileLoc, "-auto-approve")
+	cmd := commandline.NewWithWorkingDir("terraform", argsArray, tfFileLocation)
+	cmd.Run()
+
+	fmt.Println("Kubernetes cluster deleted through Terraform")
 }

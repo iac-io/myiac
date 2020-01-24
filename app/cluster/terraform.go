@@ -17,5 +17,6 @@ func ApplyDnsIpChange(tfFileLocation string, ip string) {
 	argsArray = util.StringTemplateToArgsArray("%s %s %s", "apply", inlinedVar, "-auto-approve")
 	cmd = commandline.NewWithWorkingDir("terraform", argsArray, tfFileLocation)
 	cmd.Run()
+
 	fmt.Printf("Applied change of IP for DNS\n")
 }

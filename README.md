@@ -7,12 +7,13 @@ Infrastructure as code. GCP for now.
 * Create a GCP service account with admin privileges from here: https://cloud.google.com/iam/docs/creating-managing-service-accounts#iam-service-accounts-create-console
 * Download the json file and store in your user directory (`$HOME/account.json`)
 * Install Go [here](https://golang.org/dl/)
-* Check `$GOPATH` is pointing to `~/go` (Mac OS X)
+* Check `$GOPATH` is pointing to `~/go` (Mac OS X), edit your `bashrc` or `zshrc` to ensure it's the case. 
 * Ensure the following structure exists (Go Workspace)
   - `mkdir $GOPATH/src`
   - `mkdir $GOPATH/pkg`
   - `mkdir $GOPATH/bin`
   - `mkdir $GOPATH/src/github.com/dfernandezm/myiac`
+* Add also `$GOPATH/go/bin` to your path
 * Clone the project inside the `$GOPATH/src/github.com/dfernandezm/myiac`
 * If deployment is required, copy a `charts` folder into `$GOPATH/bin`. This folder should follow the structure `charts/{appName}`. Inside there a typical structure for a Helm chart should be present (templates, values.yaml...)
 
@@ -20,8 +21,9 @@ Infrastructure as code. GCP for now.
 
 ```
 # inside myiac folder
-go build -o $GOPATH/bin/myiac github.com/dfernandezm/myiac/app
-myiac
+$ go get ./...
+$ go build -o $GOPATH/bin/myiac github.com/dfernandezm/myiac/app
+$ myiac
 ```
 
 if not, the main package would be used as executable:

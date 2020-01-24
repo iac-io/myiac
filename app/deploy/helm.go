@@ -3,9 +3,9 @@ package deploy
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/dfernandezm/myiac/app/util"
 	"log"
 	"strings"
-	"github.com/dfernandezm/myiac/app/util"
 )
 
 //https://quii.gitbook.io/learn-go-with-tests/go-fundamentals/mocking
@@ -32,7 +32,7 @@ type CommandRunner interface {
 }
 
 type helmDeployer struct {
-	releases ReleasesList
+	releases  ReleasesList
 	cmdRunner CommandRunner
 }
 
@@ -65,18 +65,25 @@ func (hd *helmDeployer) ListReleases() ReleasesList {
 	hd.cmdRunner.Setup("helm", argsArray)
 	hd.cmdRunner.RunVoid()
 	cmdOutputJson := hd.cmdRunner.Output()
-	// cmdResult := cmd.Run()
-	// cmdOutputJson := cmdResult.Output()
 	listReleases := hd.ParseReleasesList(cmdOutputJson)
 	return listReleases
 }
 
 func (hd *helmDeployer) ParseReleasesList(jsonString string) ReleasesList {
 	var listReleases ReleasesList
-	jsonData := []byte(jsonString)
-	err := json.Unmarshal(jsonData, &listReleases)
-	if err != nil {
-		log.Fatalf("Error parsing json to struct %v %v", jsonData, err)
+	
+	// If there is no releases, a single space is returned
+	if jsonString == "" || len(strings.TrimSpace(jsonString)) == 0 {
+		// empty releases list
+		log.Printf("Empty list of releases found")
+		listReleases = ReleasesList{"", []*Release{}}
+	} else {
+		jsonData := []byte(jsonString)
+		err := json.Unmarshal(jsonData, &listReleases)
+		if err != nil {
+			log.Fatalf("Error parsing json to struct %v %v", jsonData, err)
+		}
 	}
+
 	return listReleases
 }

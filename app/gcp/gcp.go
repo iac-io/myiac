@@ -2,13 +2,12 @@ package gcp
 
 import (
 	"fmt"
-
 	"github.com/dfernandezm/myiac/app/commandline"
 	"github.com/dfernandezm/myiac/app/util"
 )
 
-func SetupEnvironment() {
-	keyLocation := util.GetHomeDir() + "/account.json"
+func SetupEnvironment(projectId string) {
+	keyLocation := util.GetHomeDir() + fmt.Sprintf("/%s_account.json", projectId)
 	baseArgs := "auth activate-service-account --key-file %s"
 	var argsArray []string = util.StringTemplateToArgsArray(baseArgs, keyLocation)
 	cmd := commandline.New("gcloud", argsArray)
