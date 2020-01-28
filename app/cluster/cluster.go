@@ -3,6 +3,7 @@ package cluster
 import (
 	"fmt"
 	"github.com/dfernandezm/myiac/app/commandline"
+	"github.com/dfernandezm/myiac/app/gcp"
 	"github.com/dfernandezm/myiac/app/util"
 	"time"
 )
@@ -28,7 +29,8 @@ func InitTerraform() {
 	cmd.Run()
 }
 
-func CreateCluster() {
+//TODO: pass variables into the TF template/clustervars
+func CreateCluster(project string, env string, zone string) {
 	currentDir := util.CurrentExecutableDir()
 	tfFileLocation := currentDir + "/terraform/cluster"
 
@@ -43,7 +45,13 @@ func CreateCluster() {
 
 	fmt.Printf("Kubernetes cluster created through Terraform from %s\n", tfFileLocation)
 
-	fmt.Printf("Installing Helm into newly created cluster...")
+	fmt.Println("Installing Helm into newly created cluster...")
+
+	fmt.Println("Waiting 10 seconds for cluster to stabilize before installing Helm")
+	time.Sleep(10 * time.Second)
+
+	fmt.Println("Setting up newly created Kubernetes cluster")
+	gcp.SetupKubernetes(project, env, zone)
 
 	InstallHelm()
 }
@@ -57,7 +65,7 @@ func DestroyCluster() {
 	fmt.Println("Waiting 5 seconds before destroying cluster...")
 	time.Sleep(5 * time.Second)
 
-	argsArray := util.StringTemplateToArgsArray("%s %s %s", "destroy", "-var-file=" + varFileLoc, "-auto-approve")
+	argsArray := util.StringTemplateToArgsArray("%s %s %s", "destroy", "-var-file="+varFileLoc, "-auto-approve")
 	cmd := commandline.NewWithWorkingDir("terraform", argsArray, tfFileLocation)
 	cmd.Run()
 

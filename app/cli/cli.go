@@ -176,11 +176,17 @@ func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFl
 			fmt.Printf("Validating flags for createCluster\n")
 			validateBaseFlags(c)
 			fmt.Printf("destroyCluster running with flags\n")
+
 			project := c.String("project")
+			env := c.String("env")
+
+			//TODO: read from project manifest
+			zone := "europe-west1-b"
 			gcp.SetupEnvironment(project)
+	
 
 			//TODO: pass-in variables
-			cluster.CreateCluster()
+			cluster.CreateCluster(project, env, zone)
 			return nil
 		},
 	}
