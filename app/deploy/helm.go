@@ -55,7 +55,7 @@ func (hd *helmDeployer) ReleaseFor(appName string) string {
 			return release.Name
 		}
 	}
-	fmt.Printf("No releases found for app %s", appName)
+	fmt.Printf("No releases found for app %s\n", appName)
 	return ""
 }
 
