@@ -9,7 +9,7 @@ RUN mv /go/bin/app /go/bin/myiac
 
 FROM google/cloud-sdk:alpine
 RUN apk --update add openjdk7-jre
-RUN gcloud components install app-engine-java kubectl
+RUN gcloud components install kubectl
 
 ENV TERRAFORM_VERSION=0.12.17
 RUN apk update && \

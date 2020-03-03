@@ -10,23 +10,24 @@ import (
 	"github.com/urfave/cli"
 	"log"
 	"os"
+	"strings"
 )
 
-// myiac setupEnvironment --project moneycol --env dev  [--key-location /path/to/key.json]
+const GCR_PREFIX = "eu.gcr.io"
+
+// BuildCli myiac setupEnvironment --project moneycol --env dev  [--key-location /path/to/key.json]
 // myiac deploy --app traefik --project moneycol --env dev
 // myiac dockerSetup --project moneycol --env dev
 // myiac dockerBuild --buildPath /home/app --tag eu.gcr.io/moneycolserver:0.1.0-abcd
 // myiac dockerPush eu.gcr.io/moneycolserver:0.1.0-abcd
-
 func BuildCli() {
 	app := cli.NewApp()
 	app.Name = "myiac"
 	app.Usage = "Infrastructure as code for Docker/Kubernetes/Helm deployments and cluster management with Terraform (GCP support for now)"
 
-	environmentFlag := &cli.StringFlag{Name: "env, e",
-		Usage: "The environment to refer to (dev,prod)"}
-	projectFlag := &cli.StringFlag{Name: "project, p",
-		Usage: "The project to refer to (projects folder manifests)"}
+	environmentFlag := &cli.StringFlag{Name: "env, e", Usage: "The environment to refer to (dev,prod)"}
+	projectFlag := &cli.StringFlag{Name: "project, p", Usage: "The project to refer to (projects folder manifests)"}
+	propertiesFlag := &cli.StringFlag{Name: "properties", Usage: "Properties for deployments"}
 
 	setupEnvironment := setupEnvironmentCmd(projectFlag, environmentFlag)
 	dockerSetup := dockerSetupCmd(projectFlag, environmentFlag)
@@ -36,7 +37,7 @@ func BuildCli() {
 	installHelmCmd := installHelmCmd(projectFlag, environmentFlag)
 	destroyClusterCmd := destroyClusterCmd(projectFlag, environmentFlag)
 
-	deployApp := deployAppSetup(projectFlag, environmentFlag)
+	deployApp := deployAppSetup(projectFlag, environmentFlag, propertiesFlag)
 	app.Commands = []*cli.Command{&setupEnvironment, &dockerSetup, &deployApp, &dockerBuild, &destroyClusterCmd, &createClusterCmd, &installHelmCmd}
 
 	err := app.Run(os.Args)
@@ -129,7 +130,7 @@ func dockerBuildCmd(projectFlag *cli.StringFlag) cli.Command {
 			gcp.ConfigureDocker()
 
 			runtime := props.NewRuntime()
-			dockerProps := props.DockerProperties{ProjectRepoUrl: "gcr.io", ProjectId: project}
+			dockerProps := props.DockerProperties{ProjectRepoUrl: GCR_PREFIX, ProjectId: project}
 			docker.BuildImage(&runtime, buildPath, &dockerProps, commit, appName, version)
 			docker.PushImage(&runtime)
 			return nil
@@ -137,9 +138,11 @@ func dockerBuildCmd(projectFlag *cli.StringFlag) cli.Command {
 	}
 }
 
-func deployAppSetup(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag) cli.Command {
-	appNameFlag := &cli.StringFlag{Name: "app, a", Usage: "The app to deploy. A helm chart with the same name must exist in the CHARTS_LOCATION"}
 
+func deployAppSetup(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag, propertiesFlag *cli.StringFlag) cli.Command {
+	appNameFlag := &cli.StringFlag{Name: "app, a",
+		Usage: "The app to deploy. A helm chart with the same name must exist in the CHARTS_LOCATION"}
+	dryRunFlag := &cli.BoolFlag{Name: "dryRun", Usage: "Executes the command in dryRun mode"}
 	return cli.Command{
 		Name:  "deploy",
 		Usage: "Deploy an app (defined as a Helm chart from a Docker image) into a Kubernetes cluster in a given environment",
@@ -147,18 +150,27 @@ func deployAppSetup(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag
 			projectFlag,
 			environmentFlag,
 			appNameFlag,
+			dryRunFlag,
+			propertiesFlag,
 		},
 		Action: func(c *cli.Context) error {
-			validateBaseFlags(c)
-			fmt.Printf("deploy with flags flags\n")
+			fmt.Printf("Deploying with flags\n")
+			if err := validateBaseFlags(c); err != nil {
+				fmt.Printf("Returning error %e\n",err)
+				return err
+			}
 
 			project := c.String("project")
 			gcp.SetupEnvironment(project)
 
 			validateStringFlagPresence("app", c)
 			appToDeploy := c.String("app")
+			fmt.Printf("About to deploy %s\n", appToDeploy)
 			env := c.String("env")
-			deploy.DeployApp(appToDeploy, env)
+			fmt.Printf("Properties for deployment: %s\n", c.String("properties"))
+			propertiesMap := readPropertiesToMap(c.String("properties"))
+			dryRun := c.Bool("dryRun")
+			deploy.Deploy(appToDeploy, env, propertiesMap, dryRun)
 			return nil
 		},
 	}
@@ -262,16 +274,16 @@ func setupEnvironmentFromContext(c *cli.Context) {
 
 func validateBaseFlags(ctx *cli.Context) error {
 	project := validateStringFlagPresence("project", ctx)
-
+	
 	if project != "moneycol" {
-		return cli.NewExitError("Project not supported: "+project, -1)
+		return cli.NewExitError("Project not supported: " + project, -1)
 	}
 
 	env := validateStringFlagPresence("env", ctx)
 
 	if env != "dev" {
-		return cli.NewExitError("Invalid environment: "+env, -1)
-	}
+		return cli.NewExitError("Invalid environment: " + env, -1)
+	} 
 
 	return nil
 }
@@ -283,9 +295,27 @@ func validateStringFlagPresence(flagName string, ctx *cli.Context) string {
 
 	if flag == "" {
 		errorMsg := fmt.Sprintf("%s parameter not provided", flag)
-		cli.NewExitError(errorMsg, -1)
-		return ""
+		err := cli.NewExitError(errorMsg, -1)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	return flag
+}
+
+func readPropertiesToMap(properties string) map[string]string {
+	propertiesMap := make(map[string]string)
+	if len(properties) > 0 {
+		fmt.Printf("Properties line is %s\n", properties)
+		keyValues := strings.Split(properties, ",")
+		for _, s := range keyValues {
+			keyValue := strings.Split(s, "=")
+			key := keyValue[0]
+			value := keyValue[1]
+			fmt.Printf("Read property: %s -> %s\n", key, value)
+			propertiesMap[key] = value
+		}
+	}
+	return propertiesMap
 }

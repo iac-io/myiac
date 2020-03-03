@@ -3,7 +3,9 @@ package deploy
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/dfernandezm/myiac/app/commandline"
 	"github.com/dfernandezm/myiac/app/util"
+	"io/ioutil"
 	"log"
 	"strings"
 )
@@ -34,10 +36,23 @@ type CommandRunner interface {
 type helmDeployer struct {
 	releases  ReleasesList
 	cmdRunner CommandRunner
+	chartsPath string
 }
 
-func NewHelmDeployer(commandRunner CommandRunner) helmDeployer {
-	return helmDeployer{ReleasesList{}, commandRunner}
+type HelmDeployment struct {
+	AppName          string
+	DryRun           bool
+	Environment 	 string
+	HelmSetParams    map[string]string // key value pairs
+	HelmValuesParams []string // yaml filenames to pass as --values
+}
+
+func NewHelmDeployer(chartsPath string, commandRunner CommandRunner) *helmDeployer {
+	hd := new(helmDeployer)
+	hd.releases = ReleasesList{}
+	hd.cmdRunner = commandRunner
+	hd.chartsPath = chartsPath
+	return hd
 }
 
 func (hd *helmDeployer) DeployedReleasesExistsFor(appName string) bool {
@@ -50,7 +65,8 @@ func (hd *helmDeployer) ReleaseFor(appName string) string {
 		appNameIsPartOfChart := strings.Contains(strings.ToLower(release.Chart), appName)
 		if appNameIsPartOfChart && release.Status == "DEPLOYED" {
 			// It exists with the given name
-			fmt.Printf("Release for app %s found. Name: %s, Status %s, Chart: %s\n",
+			fmt.Printf("Release for app %s found. " +
+				"Name: %s, Status %s, Chart: %s\n",
 				appName, release.Name, release.Status, release.Chart)
 			return release.Name
 		}
@@ -86,4 +102,73 @@ func (hd *helmDeployer) ParseReleasesList(jsonString string) ReleasesList {
 	}
 
 	return listReleases
+}
+
+func (hd *helmDeployer) findChartForApp(appName string) string {
+	files, err := ioutil.ReadDir(getBaseChartsPath())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, file := range files {
+		chartFolder := file.Name()
+		fmt.Printf("Checking chart folder: %s\n", chartFolder)
+		appNameNormalized := normalizeName(appName)
+		chartFolderNormalized := normalizeName(chartFolder)
+
+		if appNameNormalized == chartFolderNormalized {
+			fmt.Printf("Found chart for app [%s] -> [%s]\n", appNameNormalized, chartFolderNormalized)
+			return getBaseChartsPath() + "/" + chartFolder
+		}
+	}
+
+	log.Fatalf("Could not find chart for app %s in path %s\n", appName, getBaseChartsPath())
+	return ""
+}
+
+func (hd *helmDeployer) Deploy(helmDeployment *HelmDeployment) {
+	var helmArgs = ""
+	var chartPathForApp = hd.findChartForApp(helmDeployment.AppName)
+	var existingRelease = hd.ReleaseFor(helmDeployment.AppName)
+	var action = "install"
+	if existingRelease != "" {
+		action = fmt.Sprintf("upgrade %s", existingRelease)
+	}
+
+	helmArgs = fmt.Sprintf("%s %s", helmArgs, action)
+	helmArgs = fmt.Sprintf("%s %s", helmArgs, chartPathForApp)
+
+	if len(helmDeployment.HelmValuesParams) > 0 {
+		valuesParams := ""
+		for _, filePath := range helmDeployment.HelmValuesParams {
+			valuesParams += valuesParams + "--values " + filePath + " "
+		}
+		valuesParams = strings.TrimSpace(valuesParams)
+		helmArgs = fmt.Sprintf("%s %s", helmArgs, valuesParams)
+	}
+
+	if len(helmDeployment.HelmSetParams) > 0 {
+		setParams := ""
+		for k, v := range helmDeployment.HelmSetParams {
+			setParams += setParams + "--set " + k + "=" + v + " "
+		}
+		setParams = strings.TrimSpace(setParams)
+		helmArgs = fmt.Sprintf("%s %s", helmArgs, setParams)
+	}
+
+	if helmDeployment.DryRun {
+		helmArgs += " --debug --dry-run"
+	}
+
+	argsArray := strings.Fields(helmArgs)
+	cmd := commandline.New("helm", argsArray)
+	cmd.Run()
+	fmt.Printf("Finished deploying app: %s\n\n", helmDeployment.AppName)
+}
+
+func normalizeName(str string) string {
+	result := strings.ToLower(str)
+	result = strings.TrimSpace(result)
+	result = strings.Replace(result, "-", "", -1)
+	return result
 }

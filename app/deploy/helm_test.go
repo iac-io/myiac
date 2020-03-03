@@ -74,7 +74,7 @@ func (mcr mockCommandRunner) Setup(executable string, args []string) {
 // To run: go test -v
 func TestReleaseDeployed(t *testing.T) {
 	commandRunner := &mockCommandRunner{output: EXISTING_RELEASES_OUTPUT}
-	d := NewHelmDeployer(commandRunner)
+	d := NewHelmDeployer("charts", commandRunner)
 
 	if !d.DeployedReleasesExistsFor("traefik") {
 		t.Errorf("The release is deployed was incorrect, got: %v, want: %v.", false, true)
@@ -83,7 +83,7 @@ func TestReleaseDeployed(t *testing.T) {
 
 func TestReleaseHasFailed(t *testing.T) {
 	commandRunner := &mockCommandRunner{output: ""}
-	d := NewHelmDeployer(commandRunner)
+	d := NewHelmDeployer("charts",commandRunner)
 
 	// Given: a release (2nd one) has failed status
 	releasesList := d.ParseReleasesList(EXISTING_RELEASES_OUTPUT)
