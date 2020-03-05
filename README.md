@@ -40,6 +40,11 @@ myiac help
 myiac [subcommand] help
 ```
 
+## Setting up SSL in traefik
+
+https://github.com/dfernandezm/myiac/blob/e0cbdde19ed9c4b8da750481e175e936c66d113c/kubernetes/cluster/README.md
+
+
 ## Golang tutorials
 
 * Structs as classes: https://golangbot.com/structs-instead-of-classes/
