@@ -17,20 +17,24 @@ type commandExec struct {
 	commandOutput string
 	workingDir    string
 	SupressOutput bool
+	ignoreError  bool
 }
 
 func NewEmpty() *commandExec {
-	ce := &commandExec{"", make([]string, 0), "", "", false}
+	ce := &commandExec{"", make([]string, 0), "", "",
+		false, false}
 	return ce
 }
 
 func New(executable string, arguments []string) *commandExec {
-	ce := &commandExec{executable, arguments, "", "", false}
+	ce := &commandExec{executable, arguments, "", "",
+		false, false}
 	return ce
 }
 
 func NewWithWorkingDir(executable string, arguments []string, workingDir string) *commandExec {
-	ce := &commandExec{executable, arguments, "", workingDir, false}
+	ce := &commandExec{executable, arguments, "", workingDir,
+		false, false}
 	return ce
 }
 
@@ -54,14 +58,19 @@ func (c *commandExec) Run() *commandExec {
 	cmdStr := string(strings.Join(cmd.Args, " "))
 	fmt.Printf("Executing [ %s ]\n", cmdStr)
 
-	//output, err := withCombinedOutput(cmd, c.SupressOutput)
-	output, err := withProgress(cmd, c.SupressOutput)
+	// output, err := withCombinedOutput(cmd, c.SupressOutput)
+	output, err := withProgress(cmd, c.SupressOutput, c.ignoreError)
 
-	if err != nil {
+	if err != nil && !c.ignoreError {
 		log.Fatalf("command [ %s ] failed with %s\n", cmdStr, err)
 	}
 
-	c.saveOutput(output)
+	if c.ignoreError {
+		log.Printf("Ignoring error for command [ %s ] with %v\n", cmdStr, err)
+	} else {
+		c.saveOutput(output)
+	}
+
 	return c
 }
 
@@ -73,6 +82,10 @@ func (c *commandExec) RunVoid() {
 
 func (c commandExec) Output() string {
 	return c.commandOutput
+}
+
+func (c *commandExec) IgnoreError(ignoreError bool) {
+	c.ignoreError = ignoreError
 }
 
 func (c *commandExec) saveOutput(output string) {
@@ -149,7 +162,7 @@ func copyAndCapture(w io.Writer, r io.Reader) ([]byte, error) {
 	}
 }
 
-func withProgress(cmd *exec.Cmd, suppressOutput bool) (string, error) {
+func withProgress(cmd *exec.Cmd, suppressOutput bool, ignoreError bool) (string, error) {
 
 	var stdout, stderr []byte
 	var errStdout, errStderr error
@@ -178,8 +191,12 @@ func withProgress(cmd *exec.Cmd, suppressOutput bool) (string, error) {
 
 	err = cmd.Wait()
 
-	if err != nil {
+	if err != nil && !ignoreError {
 		log.Fatalf("cmd.Run() failed with %s\n", err)
+	}
+
+	if ignoreError {
+		log.Printf("cmd.Run() error ignored due to flag 'ignoreError' set %s\n", err)
 	}
 
 	if errStdout != nil || errStderr != nil {

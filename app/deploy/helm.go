@@ -31,6 +31,7 @@ type CommandRunner interface {
 	RunVoid()
 	Output() string
 	Setup(cmd string, args []string)
+	IgnoreError(ignoreError bool)
 }
 
 type helmDeployer struct {
@@ -61,6 +62,10 @@ func (hd *helmDeployer) DeployedReleasesExistsFor(appName string) bool {
 
 func (hd *helmDeployer) ReleaseFor(appName string) string {
 	releasesList := hd.ListReleases()
+
+	fmt.Println("Cleaning up FAILED releases")
+	hd.DeleteFailedReleases()
+
 	for _, release := range releasesList.Releases {
 		appNameIsPartOfChart := strings.Contains(strings.ToLower(release.Chart), appName)
 		if appNameIsPartOfChart && release.Status == "DEPLOYED" {
@@ -83,6 +88,25 @@ func (hd *helmDeployer) ListReleases() ReleasesList {
 	cmdOutputJson := hd.cmdRunner.Output()
 	listReleases := hd.ParseReleasesList(cmdOutputJson)
 	return listReleases
+}
+
+func (hd *helmDeployer) DeleteFailedReleases()  {
+	releasesList := hd.ListReleases()
+	for _, release := range releasesList.Releases {
+		if release.Status == "FAILED" {
+			fmt.Printf("Deleting FAILED Helm release -> %s\n", release.Name)
+			deleteHelmRelease(hd, release.Name)
+		}
+	}
+}
+
+func deleteHelmRelease(hd *helmDeployer, releaseName string) {
+	cmdArgs := "delete %s"
+	argsArray := util.StringTemplateToArgsArray(cmdArgs, releaseName)
+	hd.cmdRunner.IgnoreError(true)
+	hd.cmdRunner.Setup("helm", argsArray)
+	hd.cmdRunner.RunVoid()
+	hd.cmdRunner.IgnoreError(false)
 }
 
 func (hd *helmDeployer) ParseReleasesList(jsonString string) ReleasesList {
