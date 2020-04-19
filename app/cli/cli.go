@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"strconv"
 )
 
 const GCR_PREFIX = "eu.gcr.io"
@@ -38,12 +39,44 @@ func BuildCli() {
 	destroyClusterCmd := destroyClusterCmd(projectFlag, environmentFlag)
 
 	deployApp := deployAppSetup(projectFlag, environmentFlag, propertiesFlag)
+	resizeClusterCmd := resizeClusterCmd(projectFlag, environmentFlag)
 	app.Commands = []cli.Command{setupEnvironment, dockerSetup, deployApp, dockerBuild, 
-		destroyClusterCmd, createClusterCmd, installHelmCmd}
+		destroyClusterCmd, createClusterCmd, installHelmCmd, resizeClusterCmd}
 
 	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
+	}
+}
+
+func resizeClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag) cli.Command {
+	nodePoolsSizeFlag := &cli.StringFlag{Name: "nodePoolsSize, bp",
+		Usage: "Target size of all node pools"}
+	return cli.Command{
+		Name:  "resizeCluster",
+		Usage: "resizeCluster to given capacity",
+		Flags: []cli.Flag{
+			projectFlag,
+			environmentFlag,
+			nodePoolsSizeFlag,
+		},
+		Action: func(c *cli.Context) error {
+			fmt.Printf("Validating flags for resizeCluster\n")
+			validateBaseFlags(c)
+			validateNodePoolsSize(c)
+
+			project := c.String("project")
+			env := c.String("env")
+			nodePoolsSize := c.Int("nodePoolsSize")
+
+			gcp.SetupEnvironment(project)
+
+			//TODO: read from project manifest
+			zone := "europe-west1-b"
+			
+			gcp.ResizeCluster(project, zone, env, nodePoolsSize)
+			return nil
+		},
 	}
 }
 
@@ -242,7 +275,7 @@ func installHelmCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag
 			environmentFlag,
 		},
 		Action: func(c *cli.Context) error {
-			fmt.Printf("Validating flags for installlHelm\n")
+			fmt.Printf("Validating flags for install Helm\n")
 			validateBaseFlags(c)
 
 			project := c.String("project")
@@ -289,16 +322,52 @@ func validateBaseFlags(ctx *cli.Context) error {
 	return nil
 }
 
+func validateNodePoolsSize(ctx *cli.Context) error {
+	fmt.Printf("Validating flag nodePoolsSize\n")
+	nodePoolsSizeValue := ctx.String("nodePoolsSize")
+	fmt.Printf("Flag nodePoolsSize read as %s\n", nodePoolsSizeValue)
+
+	val, err := strconv.Atoi(nodePoolsSizeValue)
+
+	if err != nil {
+		log.Printf("Error converting %v\n", err)
+		logErrorAndExit("Invalid nodePoolsSize: " + nodePoolsSizeValue)
+	}
+
+	if val >= 0 {
+		// Valid, it's greater than 0
+		fmt.Printf("Valid nodePoolSize %s", nodePoolsSizeValue)
+		return nil
+	}
+
+	if val < 0 {
+		logErrorAndExit(fmt.Sprintf("Invalid nodePoolsSize: %d", val))
+	}
+	
+	if len(nodePoolsSizeValue) == 0 {
+		logErrorAndExit("Invalid nodePoolsSize: " + nodePoolsSizeValue)
+	} 
+	
+	return nil
+}
+
+func logErrorAndExit(errorMsg string) {
+	err := cli.NewExitError(errorMsg, -1)
+	if err != nil {
+		log.Fatalf(errorMsg, err)
+	}
+}
+
 func validateStringFlagPresence(flagName string, ctx *cli.Context) string {
 	fmt.Printf("Validating flag %s\n", flagName)
 	flag := ctx.String(flagName)
 	fmt.Printf("Read flag %s as %s\n", flagName, flag)
 
 	if flag == "" {
-		errorMsg := fmt.Sprintf("%s parameter not provided", flag)
+		errorMsg := fmt.Sprintf("%s parameter not provided", flagName)
 		err := cli.NewExitError(errorMsg, -1)
 		if err != nil {
-			panic(err)
+			log.Fatalf(errorMsg, err)
 		}
 	}
 

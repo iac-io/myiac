@@ -1,45 +1,27 @@
 steps:
   - name: "gcr.io/cloud-builders/gsutil"
     id: copy_config
-    waitFor: ["-"] # The '-' indicates that this step begins immediately.
+    # The '-' indicates that this step begins immediately.
+    waitFor: ["-"] 
     # we use rsync and not cp so that this step doesn't fail the first time it's run
-    args: ["rsync", "gs://myiac-base/", "/workspace"]
-
-    # volumes:
-    # - name: 'myiac_base'
-    #   path: '/myiac_base'
+    args: ["rsync", "gs://myiac-base/", "/myiac-base"]
+    volumes:
+    - name: 'myiac-base'
+      path: '/myiac-base'
  
-  #https://github.com/GoogleCloudPlatform/cloud-builders/issues/323
-  # - id: run_myiac
-  #   name: "gcr.io/cloud-builders/docker"
-  #   args:
-  #     [
-  #       "run",
-  #       "--volume",
-  #       "/workspace:/workspace",
-  #       "--rm",
-  #       "eu.gcr.io/moneycol/myiac:0.1.0-434290b",
-  #       "sh",
-  #       "-c",
-  #       "ls -lah /workspace && cp /workspace/myiac /home/app/myiac2 && chmod +x /home/app/myiac2 && ls -la /home/app && ./myiac2 help",
-  #     ]
-
-  - id: run_myiac
+  - id: run_myiac_check
     name: "gcr.io/cloud-builders/docker"
     args:
       [
         "run",
         "--volume",
-        "/workspace:/workspace",
+        "myiac-base:/workspace",
         "--rm",
         "--entrypoint=/bin/bash",
         "gcr.io/cloud-builders/go:debian",
         "-c",
-        "ls -lah && cd bin && cp /workspace/myiac . && ls -lah && chmod +x myiac && ./myiac help",
+        "ls -lah && cd bin && cp /workspace/* . && ls -lah && chmod +x myiac && ./myiac help",
       ]
-# - id: myiac_check
-#   name: busybox
-#   args: ["/myiac_base/myiac", "help"]
-#   volumes:
-#   - name: 'myiac_base'
-#     path: '/myiac_base'
+    volumes:
+    - name: 'myiac-base'
+      path: '/myiac-base'

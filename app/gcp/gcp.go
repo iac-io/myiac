@@ -4,7 +4,14 @@ import (
 	"fmt"
 	"github.com/dfernandezm/myiac/app/commandline"
 	"github.com/dfernandezm/myiac/app/util"
+	"strings"
+	"strconv"
+	"encoding/json"
+	"log"
 )
+
+type nodePoolList []map[string]interface{}
+
 
 func SetupEnvironment(projectId string) {
 	keyLocation := util.GetHomeDir() + fmt.Sprintf("/%s_account.json", projectId)
@@ -32,4 +39,63 @@ func SetupKubernetes(project string, zone string, environment string) {
 	cmd := commandline.New("gcloud", argsArray)
 	cmd.Run()
 	fmt.Println("Kubernetes setup completed")
+}
+
+// https://www.sohamkamani.com/blog/2017/10/18/parsing-json-in-golang/
+func parseNodePoolList(jsonString string) nodePoolList {
+	var listNodePools nodePoolList
+	
+	// If there is no releases, a single space is returned
+	if jsonString == "" || len(strings.TrimSpace(jsonString)) == 0 {
+		// empty releases list
+		fmt.Printf("Empty list of releases found")
+	} else {
+		jsonData := []byte(jsonString)
+		err := json.Unmarshal(jsonData, &listNodePools)
+		if err != nil {
+			log.Fatalf("Error parsing json to struct %v", err)
+		}
+	}
+	return listNodePools
+}
+
+// ListClusterNodePools list the node pools in the GKE cluster
+func ListClusterNodePools(project string, zone string, environment string) nodePoolList {
+	cmdTpl := "container node-pools list --cluster %s --zone %s --project %s --format json"
+	clusterName := fmt.Sprintf("%s-%s", project, environment)
+	argsArray := util.StringTemplateToArgsArray(cmdTpl, clusterName, zone, project)
+	cmd := commandline.New("gcloud", argsArray)
+	cmd.Run()
+	nodePools := parseNodePoolList(cmd.Output())
+	fmt.Printf("Node Pools in cluster %s: %v\n", clusterName, nodePools)
+	return nodePools	
+}
+// ResizeCluster change the size of GKE cluster node pools to the provided values
+//
+// The resize command needs to be executed once per node pool:
+// 
+//	gcloud container clusters resize NAME (--num-nodes=NUM_NODES | --size=NUM_NODES) [--async]
+// 	[--node-pool=NODE_POOL] [--region=REGION | --zone=ZONE, -z ZONE]
+func ResizeCluster(project string, zone string, environment string, targetSize int) {
+	clusterName := fmt.Sprintf("%s-%s", project, environment)
+	action := "container clusters resize"
+
+	nodePools := ListClusterNodePools(project, zone, environment)
+	nodePoolResizeTpl := "--node-pool %s --num-nodes %s"
+	
+	for _,np := range nodePools {
+		nodePoolName := np["name"]
+		nodePoolNameStr, _ := nodePoolName.(string)
+		fmt.Printf("Resizing node pool %s to %d", nodePoolName, targetSize)
+		targetSizeStr := strconv.Itoa(targetSize)
+		nodePoolResizeArray := util.StringTemplateToArgsArray(nodePoolResizeTpl, nodePoolNameStr, targetSizeStr)
+		nodePoolResizePart := strings.Join(nodePoolResizeArray, " ")
+		
+		cmdTpl := "%s %s %s --zone %s --project %s -q"
+		argsArray := util.StringTemplateToArgsArray(cmdTpl, action, clusterName, nodePoolResizePart, zone, project)
+		cmd := commandline.New("gcloud", argsArray)
+		cmd.Run()
+		fmt.Printf("Node Pool %s resized", nodePoolName)	
+	}
+	fmt.Println("Cluster resized")
 }
