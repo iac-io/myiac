@@ -26,7 +26,7 @@ type ReleasesList struct {
 	Releases []*Release // using pointer as it becomes mutable (useful for tests)
 }
 
-// Implicit interface for commandline package, need access to those methods here
+// CommandRunner Implicit interface for commandline package, need access to those methods here
 type CommandRunner interface {
 	RunVoid()
 	Output() string
