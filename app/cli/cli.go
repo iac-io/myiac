@@ -38,7 +38,8 @@ func BuildCli() {
 	destroyClusterCmd := destroyClusterCmd(projectFlag, environmentFlag)
 
 	deployApp := deployAppSetup(projectFlag, environmentFlag, propertiesFlag)
-	app.Commands = []*cli.Command{&setupEnvironment, &dockerSetup, &deployApp, &dockerBuild, &destroyClusterCmd, &createClusterCmd, &installHelmCmd}
+	app.Commands = []cli.Command{setupEnvironment, dockerSetup, deployApp, dockerBuild, 
+		destroyClusterCmd, createClusterCmd, installHelmCmd}
 
 	err := app.Run(os.Args)
 	if err != nil {
