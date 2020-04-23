@@ -1,10 +1,26 @@
 package gcp
 
 import (
-	//"fmt"
-	"testing"
 	"github.com/stretchr/testify/assert"
+	"os"
+	"testing"
+
 )
+
+func setup() {
+	// Not working currently, the idea is suppressing output while running the tests
+	os.Stdout,_ = os.Open(os.DevNull)
+}
+
+func TestMain(m *testing.M) {
+	setup()
+	code := m.Run()
+	shutdown()
+	os.Exit(code)
+}
+
+func shutdown() {
+}
 
 func TestCreateGCPDNSService(t *testing.T) {
 	gcpClient := NewGoogleCloudDNSService("moneycol","test-zone")

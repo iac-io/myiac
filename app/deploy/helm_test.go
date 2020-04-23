@@ -51,6 +51,7 @@ type mockCommandRunner struct {
 	executable string
 	arguments  []string
 	output     string
+	ignoreError bool
 }
 
 func (mcr *mockCommandRunner) SetOutput(output string) {
@@ -65,9 +66,13 @@ func (mcr *mockCommandRunner) Output() string {
 	return mcr.output
 }
 
-func (mcr mockCommandRunner) Setup(executable string, args []string) {
+func (mcr *mockCommandRunner) Setup(executable string, args []string) {
 	mcr.executable = executable
 	mcr.arguments = args
+}
+
+func (mcr *mockCommandRunner) IgnoreError(ignoreError bool) {
+	mcr.ignoreError = ignoreError
 }
 
 // https://quii.gitbook.io/learn-go-with-tests/

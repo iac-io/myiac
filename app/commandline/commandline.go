@@ -125,20 +125,6 @@ func withSeparatedOutput(cmdStr string, cmd *exec.Cmd) error {
 	return nil
 }
 
-// func (c *Cmd) CombinedOutput() ([]byte, error) {
-// 	if c.Stdout != nil {
-// 		return nil, errors.New("exec: Stdout already set")
-// 	}
-// 	if c.Stderr != nil {
-// 		return nil, errors.New("exec: Stderr already set")
-// 	}
-// 	var b bytes.Buffer
-// 	c.Stdout = &b
-// 	c.Stderr = &b
-// 	err := c.Run()
-// 	return b.Bytes(), err
-// }
-
 func copyAndCapture(w io.Writer, r io.Reader) ([]byte, error) {
 	var out []byte
 	buf := make([]byte, 1024, 1024)

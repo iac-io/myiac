@@ -19,7 +19,7 @@ type GoogleCloudDNSService struct {
 // zone is the managedZone name (should've been created beforehand)
 func NewGoogleCloudDNSService(project, zone string) *GoogleCloudDNSService {
 
-	fmt.Printf("Creating new GoogleCloudDNSService for project %v and zone %v", project, zone)
+	fmt.Printf("Creating new GoogleCloudDNSService for project %v and zone %v\n", project, zone)
 
 	ctx := context.Background()
 
@@ -71,7 +71,7 @@ func (dnsService *GoogleCloudDNSService) UpsertDNSRecord(dnsRecordType, dnsRecor
 
 	change := dns.Change{
 		Additions: []*dns.ResourceRecordSet{
-			&dns.ResourceRecordSet{
+			{
 				Name: fmt.Sprintf("%v.", dnsRecordName),
 				Type: dnsRecordType,
 				Ttl:  20,
