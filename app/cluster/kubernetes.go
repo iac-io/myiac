@@ -54,3 +54,42 @@ func getAllIps(json map[string]interface{}, internal bool) []string {
 	return ips
 }
 
+// Creates a generic secret in a Kubernetes namespace from an existing
+// service account key
+//
+// See: https://stackoverflow.com/questions/45879498/how-can-i-update-a-secret-on-kubernetes-when-it-is-generated-from-a-file
+// kubectl create secret generic firestore-key --from-file=key.json=/Users/david/moneycol-firestore-collections-api.json
+func CreateSecret(name string, namespace string, jsonKeyPath string) {
+	deleteSecret(name, namespace)
+	fromFileArg := "--from-file=" + name + ".json=" + jsonKeyPath
+	argsArray := []string{"create", "secret", "generic", name, fromFileArg, "-n", namespace}
+	cmd := commandline.New("kubectl", argsArray)
+	cmd.SupressOutput = true
+	cmd.Run()
+}
+
+// kubectl create secret generic dev-db-secret --from-literal=username=devuser --from-literal=password='S!B\*d$zDsb='
+func CreateSecretFromLiteral(name string, namespace string, literals map[string]string) {
+	deleteSecret(name, namespace)
+	fromLiteralArg := ""
+	for k, v := range literals {
+		fmt.Printf("Adding secret literal: %s -> %s", k, "*****\n")
+		fromLiteralArg += fmt.Sprintf("--from-literal=%s=%s ", k, v)
+	}
+
+	fromLiteralArg = strings.TrimSpace(fromLiteralArg)
+	argsArray := []string{"create", "secret", "generic", name, fromLiteralArg, "-n", namespace}
+	cmd := commandline.New("kubectl", argsArray)
+	cmd.SupressOutput = true
+	cmd.Run()
+}
+
+func deleteSecret(name string, namespace string) {
+	argsArray := []string{"delete", "secret", name, "-n", namespace}
+	cmd := commandline.New("kubectl", argsArray)
+	cmd.SupressOutput = true
+	cmd.IgnoreError(true)
+	cmd.Run()
+}
+
+

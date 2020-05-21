@@ -7,11 +7,12 @@ import (
 	"github.com/dfernandezm/myiac/app/docker"
 	"github.com/dfernandezm/myiac/app/gcp"
 	props "github.com/dfernandezm/myiac/app/properties"
+	"github.com/dfernandezm/myiac/app/util"
 	"github.com/urfave/cli"
 	"log"
 	"os"
-	"strings"
 	"strconv"
+	"strings"
 )
 
 const GCR_PREFIX = "eu.gcr.io"
@@ -40,8 +41,18 @@ func BuildCli() {
 
 	deployApp := deployAppSetup(projectFlag, environmentFlag, propertiesFlag)
 	resizeClusterCmd := resizeClusterCmd(projectFlag, environmentFlag)
-	app.Commands = []cli.Command{setupEnvironment, dockerSetup, deployApp, dockerBuild, 
-		destroyClusterCmd, createClusterCmd, installHelmCmd, resizeClusterCmd}
+	createSecretCmd := createSecretCmd(projectFlag, environmentFlag)
+	app.Commands = []cli.Command{
+		setupEnvironment,
+		dockerSetup,
+		deployApp,
+		dockerBuild,
+		destroyClusterCmd,
+		createClusterCmd,
+		installHelmCmd,
+		resizeClusterCmd,
+		createSecretCmd,
+	}
 
 	err := app.Run(os.Args)
 	if err != nil {
@@ -62,8 +73,8 @@ func resizeClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFl
 		},
 		Action: func(c *cli.Context) error {
 			fmt.Printf("Validating flags for resizeCluster\n")
-			validateBaseFlags(c)
-			validateNodePoolsSize(c)
+			_ = validateBaseFlags(c)
+			_ = validateNodePoolsSize(c)
 
 			project := c.String("project")
 			env := c.String("env")
@@ -90,7 +101,7 @@ func setupEnvironmentCmd(projectFlag *cli.StringFlag, environmentFlag *cli.Strin
 		},
 		Action: func(c *cli.Context) error {
 			fmt.Printf("Validating flags for setupEnvironment\n")
-			validateBaseFlags(c)
+			_ = validateBaseFlags(c)
 
 			project := c.String("project")
 			env := c.String("env")
@@ -105,6 +116,88 @@ func setupEnvironmentCmd(projectFlag *cli.StringFlag, environmentFlag *cli.Strin
 	}
 }
 
+
+// https://cloud.google.com/iam/docs/creating-managing-service-account-keys
+func createSecretCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag) cli.Command {
+	secretNameFlag := &cli.StringFlag{Name: "secretName", Usage: "The name of the secret to be created in K8s"}
+	saEmailFlag := &cli.StringFlag{Name: "saEmail", Usage: "The service account email whose key will be associated to the secret"}
+	recreateKeyFlag :=  &cli.BoolFlag{Name: "recreateSaKey", Usage: "Whether or not it should recreate the SA key"}
+	literalStringFlag := &cli.StringFlag{Name: "literal", Usage: "String to encode as secret, in plain text"}
+
+	return cli.Command{
+		Name:  "createSecret",
+		Usage: "Create Kubernetes secret from a file",
+		Flags: []cli.Flag{
+			projectFlag,
+			environmentFlag,
+			secretNameFlag,
+			saEmailFlag,
+			recreateKeyFlag,
+			literalStringFlag,
+		},
+		Action: func(c *cli.Context) error {
+			_ = validateBaseFlags(c)
+			fmt.Printf("Create secret with flags\n")
+
+			project := c.String("project")
+			env := c.String("env")
+
+			// For file-based secrets
+			secretName := c.String("secretName")
+			saEmail := c.String("saEmail")
+			recreateKey := c.Bool("recreateSaKey")
+
+			// for literal secrets
+			literal := c.String("literal")
+
+			zone := "europe-west1-b"
+
+			gcp.SetupEnvironment(project)
+			gcp.SetupKubernetes(project, zone, env)
+
+			if len(saEmail) > 0 {
+				fmt.Printf("Creating secret for service account %s\n", saEmail)
+
+				jsonKey, err := gcp.KeyForServiceAccount(saEmail, recreateKey)
+
+				if err != nil {
+					fmt.Printf("Error generating Key for SA %s %v", saEmail, err)
+					return err
+				}
+
+				// Naming convention, secret and key file share the name
+				filePath := fmt.Sprintf("/tmp/%s.json", secretName)
+				fmt.Printf("Key to write %s\n", jsonKey)
+				writeErr := util.WriteStringToFile(jsonKey, filePath)
+
+				if writeErr != nil {
+					fmt.Printf("Error writing Key to file %v\n", writeErr)
+					return writeErr
+				}
+
+				cluster.CreateSecret(secretName, "default", filePath)
+
+			} else if len(literal) > 0 {
+				fmt.Printf("Creating secret for literal string\n")
+				literalArr := strings.Split(literal, "=")
+
+				if len(literalArr) >= 2 {
+					//TODO: support multiple literals comma separated
+					literalMap := make(map[string]string)
+					literalMap[literalArr[0]] = literalArr[1]
+					cluster.CreateSecretFromLiteral(secretName, "default", literalMap)
+				} else {
+					return fmt.Errorf("error, literal should have key=value pairs")
+				}
+			} else {
+				return fmt.Errorf("no supported secret type detected")
+			}
+
+			return nil
+		},
+	}
+}
+
 func dockerSetupCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag) cli.Command {
 	return cli.Command{
 		Name:  "dockerSetup",
@@ -114,7 +207,7 @@ func dockerSetupCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag
 			environmentFlag,
 		},
 		Action: func(c *cli.Context) error {
-			validateBaseFlags(c)
+			_ = validateBaseFlags(c)
 			fmt.Printf("dockerSetup with flags\n")
 			project := c.String("project")
 			gcp.SetupEnvironment(project)
@@ -126,14 +219,16 @@ func dockerSetupCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag
 
 //TODO: automate GetCommitHash (git rev-parse HEAD | cut -c1-7, --git-dir /path/to/gitdir )
 func dockerBuildCmd(projectFlag *cli.StringFlag) cli.Command {
-
-	appNameFlag := &cli.StringFlag{Name: "app, a", Usage: "The container to build. Should match a repo name in registry and a Helm chart folder naming convention (moneycol-server, moneycol-frontend...)"}
-
+	appNameFlag := &cli.StringFlag{
+		Name: "app, a",
+		Usage: "The container to build. Should match a repo name in registry " +
+			"and a Helm chart folder naming convention (moneycol-server, moneycol-frontend...)"
+	}
 	buildPathFlag := &cli.StringFlag{Name: "buildPath, bp",
 		Usage: "The location of the Dockerfile"}
-	commitHashFlag := &cli.StringFlag{Name: "commit, ch",
+	commitHashFlag := &cli.StringFlag{Name: "commit, ch", // Make sure the abbreviations don't repeat, obscure panic error happens
 		Usage: "The 7 digit commit hash for the tag"}
-	versionFlag := &cli.StringFlag{Name: "version, ch",
+	versionFlag := &cli.StringFlag{Name: "version, v",
 		Usage: "The version to be built (semver major.minor.patch)"}
 
 	return cli.Command{
@@ -293,18 +388,7 @@ func installHelmCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag
 	}
 }
 
-func setupEnvironmentFromContext(c *cli.Context) {
-	validateBaseFlags(c)
-
-	project := c.String("project")
-	env := c.String("env")
-
-	gcp.SetupEnvironment(project)
-
-	//TODO: read from project manifest
-	zone := "europe-west1-b"
-	gcp.SetupKubernetes(project, zone, env)
-}
+// --- Aux functions ---
 
 func validateBaseFlags(ctx *cli.Context) error {
 	project := validateStringFlagPresence("project", ctx)

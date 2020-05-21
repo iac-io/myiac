@@ -195,7 +195,7 @@ func withProgress(cmd *exec.Cmd, suppressOutput bool, ignoreError bool) (string,
 		log.Fatalf("cmd.Run() failed with %s\n", err)
 	}
 
-	if ignoreError {
+	if err != nil && ignoreError {
 		log.Printf("cmd.Run() error ignored due to flag 'ignoreError' set %s\n", err)
 	}
 
@@ -208,7 +208,6 @@ func withProgress(cmd *exec.Cmd, suppressOutput bool, ignoreError bool) (string,
 	// Not sure if this is the way, but there are valid data on stdout and stderr
 	combinedOutputStr := outputStr + "\n" + errorStr
 	if !suppressOutput {
-		//fmt.Printf("\nOutput:\n%s\nErr:\n%s\n", outputStr, errorStr)
 		fmt.Printf("\nOutput:\n%s\n", combinedOutputStr)
 	}
 

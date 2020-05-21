@@ -1,12 +1,13 @@
 package util
 
 import (
-	"path/filepath"
+	b64 "encoding/base64"
 	"fmt"
 	"log"
 	"os"
-	"os/user"
 	"os/exec"
+	"os/user"
+	"path/filepath"
 	"strings"
 )
 
@@ -57,3 +58,32 @@ func stringToInterfaceArrays(arr []string) []interface{} {
 	}
 	return s
 }
+
+func Base64Decode(toDecode string) string {
+	decodedBytes, _ := b64.StdEncoding.DecodeString(toDecode)
+	decodedString := string(decodedBytes)
+	return decodedString
+}
+
+// Writes content to a filePath, overriding the current contents
+// Returns: error when cannot create the file or write content
+func WriteStringToFile(content string, filePath string) error {
+	fmt.Printf("Creating file\n")
+
+	fo, err := os.Create(filePath)
+	if err != nil {
+		fmt.Printf("Error creating file %s %v\n", filePath, err)
+		return err
+	}
+
+	bytes, err := fmt.Fprintf(fo, "%s", content)
+	if err != nil {
+		fmt.Printf("Error creating file %s %v\n", filePath, err)
+		return err
+	}
+
+	fmt.Printf("Written %d bytes\n", bytes)
+	return nil
+}
+
+
