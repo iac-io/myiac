@@ -5,6 +5,7 @@ import (
 	"github.com/dfernandezm/myiac/app/cluster"
 	"github.com/dfernandezm/myiac/app/deploy"
 	"github.com/dfernandezm/myiac/app/docker"
+	"github.com/dfernandezm/myiac/app/encryption"
 	"github.com/dfernandezm/myiac/app/gcp"
 	props "github.com/dfernandezm/myiac/app/properties"
 	"github.com/dfernandezm/myiac/app/util"
@@ -42,6 +43,8 @@ func BuildCli() {
 	deployApp := deployAppSetup(projectFlag, environmentFlag, propertiesFlag)
 	resizeClusterCmd := resizeClusterCmd(projectFlag, environmentFlag)
 	createSecretCmd := createSecretCmd(projectFlag, environmentFlag)
+	cryptCmd := cryptCmd(projectFlag)
+
 	app.Commands = []cli.Command{
 		setupEnvironment,
 		dockerSetup,
@@ -52,11 +55,69 @@ func BuildCli() {
 		installHelmCmd,
 		resizeClusterCmd,
 		createSecretCmd,
+		cryptCmd,
 	}
 
 	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
+	}
+}
+
+func cryptCmd(projectFlag *cli.StringFlag) cli.Command {
+	modeFlag := &cli.StringFlag{
+		Name: "mode, m",
+		Usage: "encrypt or decrypt",
+	}
+
+	filenameWithTextFlag := &cli.StringFlag{
+		Name: "filename, f",
+		Usage: "Location of file with plainText to encrypt or cipherText to decrypt. " +
+			"The CipherText will be written in a file with the " +
+			"same name ended with .enc, the plainText file will be written with same filename ending .dec",
+	}
+
+	return cli.Command{
+		Name:  "crypt",
+		Usage: "Encrypt or decrypt file contents",
+		Flags: []cli.Flag{
+			projectFlag,
+			modeFlag,
+			filenameWithTextFlag,
+		},
+		Action: func(c *cli.Context) error {
+			fmt.Printf("Validating flags for crypt \n")
+
+			_ = validateStringFlagPresence("project", c)
+			_ = validateStringFlagPresence("mode", c)
+			_ = validateStringFlagPresence("filename", c)
+
+			project := c.String("project")
+			mode := c.String("mode")
+			filename := c.String("filename")
+
+			gcp.SetupEnvironment(project)
+
+			keyRingName := fmt.Sprintf("%s-keyring", project)
+			keyName := fmt.Sprintf("%s-infra-key", project)
+			locationId := "global"
+			kmsEncrypter := gcp.NewKmsEncrypter(project, locationId, keyRingName, keyName)
+			encrypter := encryption.NewEncrypter(kmsEncrypter)
+
+			if mode != "encrypt" && mode != "decrypt" {
+				return cli.NewExitError("mode can only be 'encrypt' or 'decrypt'",-1)
+			}
+
+			if mode == "encrypt" {
+				encrypter.EncryptFileContents(filename)
+			}
+
+			if mode == "decrypt" {
+				encrypter.DecryptFileContents(filename)
+			}
+
+			return nil
+		},
 	}
 }
 
@@ -222,7 +283,7 @@ func dockerBuildCmd(projectFlag *cli.StringFlag) cli.Command {
 	appNameFlag := &cli.StringFlag{
 		Name: "app, a",
 		Usage: "The container to build. Should match a repo name in registry " +
-			"and a Helm chart folder naming convention (moneycol-server, moneycol-frontend...)"
+			"and a Helm chart folder naming convention (moneycol-server, moneycol-frontend...)",
 	}
 	buildPathFlag := &cli.StringFlag{Name: "buildPath, bp",
 		Usage: "The location of the Dockerfile"}

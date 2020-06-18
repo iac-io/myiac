@@ -3,6 +3,7 @@ package util
 import (
 	b64 "encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -84,6 +85,31 @@ func WriteStringToFile(content string, filePath string) error {
 
 	fmt.Printf("Written %d bytes\n", bytes)
 	return nil
+}
+
+func ArrayContains(array []string, value string) bool {
+	for _, val:= range array {
+		if val == value {
+			return true
+		}
+	}
+	return false
+}
+
+func ReadFileToString(filename string) (string, error) {
+	bytes, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return "", fmt.Errorf("error reading file %v", err)
+	}
+	return string(bytes), nil
+}
+
+func ReadFileToBytes(filename string) ([]byte, error) {
+	bytes, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, fmt.Errorf("error reading file %v", err)
+	}
+	return bytes, nil
 }
 
 
