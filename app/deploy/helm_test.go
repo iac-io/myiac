@@ -70,6 +70,10 @@ func (mcr mockCommandRunner) Setup(executable string, args []string) {
 	mcr.arguments = args
 }
 
+func (mcr mockCommandRunner) IgnoreError(ignoreError bool) {
+
+}
+
 // https://quii.gitbook.io/learn-go-with-tests/
 // To run: go test -v
 func TestReleaseDeployed(t *testing.T) {
