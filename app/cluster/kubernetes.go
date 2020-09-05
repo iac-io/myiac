@@ -2,9 +2,9 @@ package cluster
 
 import (
 	"fmt"
-	"strings"
 	"github.com/dfernandezm/myiac/app/commandline"
 	"github.com/dfernandezm/myiac/app/util"
+	"strings"
 )
 
 func GetInternalIpsForNodes() []string {
@@ -33,7 +33,7 @@ func executeGetIpsCmd() map[string]interface{} {
 	cmd := commandline.New("kubectl", argsArray)
 	cmd.SupressOutput = true
 	cmdResult := cmd.Run()
-	cmdOutput := cmdResult.Output()
+	cmdOutput := cmdResult.Output
 	json := util.Parse(cmdOutput)
 	return json
 }
@@ -82,6 +82,44 @@ func CreateSecretFromLiteral(name string, namespace string, literals map[string]
 	cmd := commandline.New("kubectl", argsArray)
 	cmd.SupressOutput = true
 	cmd.Run()
+}
+
+// =======================================
+
+type KubernetesRunner interface {
+	CreateTlsSecret(name string, namespace string, keyFile string, certFile string)
+	FindSecret(name string, namespace string) string
+}
+
+type kubernetesRunner struct {
+	cmdRunner commandline.CommandRunner
+}
+
+func NewKubernetesRunner(commandRunner commandline.CommandRunner) *kubernetesRunner {
+	return &kubernetesRunner{cmdRunner:commandRunner}
+}
+
+func (kr kubernetesRunner) CreateTlsSecret(name string, namespace string, keyFile string, certFile string) {
+	deleteSecret(name, namespace)
+	keysArg := ""
+
+	fmt.Printf("Adding key file: %s -> %s", keyFile, "*****\n")
+	keyArg := fmt.Sprintf("--key=%s", keyFile)
+	fmt.Printf("Adding cert file: %s -> %s", certFile, "*****\n")
+	certArg := fmt.Sprintf("--cert=%s", certFile)
+
+	keysArg = strings.TrimSpace(keysArg)
+	argsArray := []string{"-n", namespace, "create", "secret", "tls", name, keyArg, certArg}
+
+	kr.cmdRunner.SetupWithoutOutput("kubectl", argsArray)
+	kr.cmdRunner.Run()
+}
+
+func (kr kubernetesRunner) FindSecret(name string, namespace string) string {
+	argsArray := []string{"get", "secret", name,"-n", namespace}
+	kr.cmdRunner.SetupWithoutOutput("kubectl", argsArray)
+	cmdOutput := kr.cmdRunner.Run()
+	return cmdOutput.Output
 }
 
 func deleteSecret(name string, namespace string) {

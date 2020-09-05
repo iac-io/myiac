@@ -11,6 +11,16 @@ import (
 	"sync"
 )
 
+// CommandRunner Implicit interface for commandline package, need access to those methods here
+type CommandRunner interface {
+	RunVoid()
+	Output() string
+	Setup(cmd string, args []string)
+	SetupWithoutOutput(cmd string, args []string)
+	IgnoreError(ignoreError bool)
+	Run() CommandOutput
+}
+
 type commandExec struct {
 	executable    string
 	arguments     []string
@@ -18,6 +28,10 @@ type commandExec struct {
 	workingDir    string
 	SupressOutput bool
 	ignoreError  bool
+}
+
+type CommandOutput struct {
+	Output string
 }
 
 func NewEmpty() *commandExec {
@@ -43,11 +57,17 @@ func (c *commandExec) Setup(executable string, arguments []string) {
 	c.arguments = arguments
 }
 
+func (c *commandExec) SetupWithoutOutput(executable string, arguments []string)  {
+	c.executable = executable
+	c.arguments = arguments
+	c.SupressOutput = true
+}
+
 func (c *commandExec) SetWorkingDir(workingDir string) {
 	c.workingDir = workingDir
 }
 
-func (c *commandExec) Run() *commandExec {
+func (c *commandExec) Run() CommandOutput {
 	cmd := exec.Command(c.executable, c.arguments...)
 
 	if c.workingDir != "" {
@@ -71,7 +91,9 @@ func (c *commandExec) Run() *commandExec {
 		c.saveOutput(output)
 	}
 
-	return c
+	outputResult := CommandOutput{Output:c.commandOutput}
+
+	return outputResult
 }
 
 func (c *commandExec) RunVoid() {
@@ -90,6 +112,10 @@ func (c *commandExec) IgnoreError(ignoreError bool) {
 
 func (c *commandExec) saveOutput(output string) {
 	c.commandOutput = output
+}
+
+func (c *commandExec) SuppressOutput(suppressOutput bool) {
+	c.SupressOutput = suppressOutput
 }
 
 func withCombinedOutput(cmd *exec.Cmd, suppressOutput bool) (string, error) {
@@ -124,20 +150,6 @@ func withSeparatedOutput(cmdStr string, cmd *exec.Cmd) error {
 	fmt.Printf("Output: \n%s\n%s\n", outStr, errStr)
 	return nil
 }
-
-// func (c *Cmd) CombinedOutput() ([]byte, error) {
-// 	if c.Stdout != nil {
-// 		return nil, errors.New("exec: Stdout already set")
-// 	}
-// 	if c.Stderr != nil {
-// 		return nil, errors.New("exec: Stderr already set")
-// 	}
-// 	var b bytes.Buffer
-// 	c.Stdout = &b
-// 	c.Stderr = &b
-// 	err := c.Run()
-// 	return b.Bytes(), err
-// }
 
 func copyAndCapture(w io.Writer, r io.Reader) ([]byte, error) {
 	var out []byte
