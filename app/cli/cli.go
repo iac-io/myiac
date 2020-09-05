@@ -3,11 +3,14 @@ package cli
 import (
 	"fmt"
 	"github.com/dfernandezm/myiac/app/cluster"
+	"github.com/dfernandezm/myiac/app/commandline"
 	"github.com/dfernandezm/myiac/app/deploy"
 	"github.com/dfernandezm/myiac/app/docker"
 	"github.com/dfernandezm/myiac/app/encryption"
 	"github.com/dfernandezm/myiac/app/gcp"
 	props "github.com/dfernandezm/myiac/app/properties"
+	"github.com/dfernandezm/myiac/app/secret"
+	"github.com/dfernandezm/myiac/app/ssl"
 	"github.com/dfernandezm/myiac/app/util"
 	"github.com/urfave/cli"
 	"log"
@@ -16,7 +19,7 @@ import (
 	"strings"
 )
 
-const GCR_PREFIX = "eu.gcr.io"
+const GCRPrefix = "eu.gcr.io"
 
 // BuildCli myiac setupEnvironment --project moneycol --env dev  [--key-location /path/to/key.json]
 // myiac deploy --app traefik --project moneycol --env dev
@@ -44,6 +47,7 @@ func BuildCli() {
 	resizeClusterCmd := resizeClusterCmd(projectFlag, environmentFlag)
 	createSecretCmd := createSecretCmd(projectFlag, environmentFlag)
 	cryptCmd := cryptCmd(projectFlag)
+	createCertCmd := createCertCmd(projectFlag)
 
 	app.Commands = []cli.Command{
 		setupEnvironment,
@@ -56,11 +60,61 @@ func BuildCli() {
 		resizeClusterCmd,
 		createSecretCmd,
 		cryptCmd,
+		createCertCmd,
 	}
 
 	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
+	}
+}
+
+
+func createCertCmd(projectFlag *cli.StringFlag) cli.Command {
+
+	keyPathFlag := &cli.StringFlag{
+		Name: "keyPath, k",
+		Usage: "Location of file with private key",
+	}
+
+	certPathFlag := &cli.StringFlag{
+		Name: "certPath, c",
+		Usage: "Cert path flag",
+	}
+
+	return cli.Command{
+		Name:  "createCert",
+		Usage: "Create certificate from files",
+		Flags: []cli.Flag{
+			projectFlag,
+			keyPathFlag,
+			certPathFlag,
+		},
+		Action: func(c *cli.Context) error {
+			fmt.Printf("Validating flags for createCert \n")
+
+			_ = validateStringFlagPresence("project", c)
+			_ = validateStringFlagPresence("keyPath", c)
+			_ = validateStringFlagPresence("certPath", c)
+
+			project := c.String("project")
+			keyPath := c.String("keyPath")
+			certPath := c.String("certPath")
+			domainName := ""
+
+			gcp.SetupEnvironment(project)
+
+			log.Printf("Creating certificate for %s from %s / %s \n", domainName, certPath, keyPath)
+
+			cmdLine := commandline.NewEmpty()
+			kubernetesRunner := cluster.NewKubernetesRunner(cmdLine)
+			secretManager := secret.NewKubernetesSecretManager("default", kubernetesRunner)
+			certificate := ssl.NewCertificate(domainName, certPath, keyPath)
+			certStore := ssl.NewSecretCertStore(secretManager)
+			certStore.Register(certificate)
+
+			return nil
+		},
 	}
 }
 
@@ -320,7 +374,7 @@ func dockerBuildCmd(projectFlag *cli.StringFlag) cli.Command {
 			gcp.ConfigureDocker()
 
 			runtime := props.NewRuntime()
-			dockerProps := props.DockerProperties{ProjectRepoUrl: GCR_PREFIX, ProjectId: project}
+			dockerProps := props.DockerProperties{ProjectRepoUrl: GCRPrefix, ProjectId: project}
 			docker.BuildImage(&runtime, buildPath, &dockerProps, commit, appName, version)
 			docker.PushImage(&runtime)
 			return nil
