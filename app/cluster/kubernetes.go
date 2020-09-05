@@ -2,9 +2,9 @@ package cluster
 
 import (
 	"fmt"
-	"strings"
 	"github.com/dfernandezm/myiac/app/commandline"
 	"github.com/dfernandezm/myiac/app/util"
+	"strings"
 )
 
 func GetInternalIpsForNodes() []string {
@@ -79,6 +79,22 @@ func CreateSecretFromLiteral(name string, namespace string, literals map[string]
 
 	fromLiteralArg = strings.TrimSpace(fromLiteralArg)
 	argsArray := []string{"create", "secret", "generic", name, fromLiteralArg, "-n", namespace}
+	cmd := commandline.New("kubectl", argsArray)
+	cmd.SupressOutput = true
+	cmd.Run()
+}
+
+func CreateTlsSecret(name string, namespace string, keyFile string, certFile string) {
+	deleteSecret(name, namespace)
+	keysArg := ""
+
+	fmt.Printf("Adding key file: %s -> %s", keyFile, "*****\n")
+	keysArg += fmt.Sprintf("--key=%s", keyFile)
+	fmt.Printf("Adding cert file: %s -> %s", certFile, "*****\n")
+	keysArg += fmt.Sprintf("--cert=%s", certFile)
+
+	keysArg = strings.TrimSpace(keysArg)
+	argsArray := []string{"create", "secret", "tls", name, keysArg, "-n", namespace}
 	cmd := commandline.New("kubectl", argsArray)
 	cmd.SupressOutput = true
 	cmd.Run()
