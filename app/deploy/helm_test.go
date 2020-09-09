@@ -1,13 +1,14 @@
 package deploy
 
 import (
-	"testing"
 	"encoding/json"
+	"github.com/dfernandezm/myiac/app/commandline"
+	"testing"
 	//"github.com/stretchr/testify/assert"
 	//"github.com/stretchr/testify/require"
 )
 
-const EXISTING_RELEASES_OUTPUT = `
+const ExistingReleasesOutput = `
 {
 	"Next": "",
 	"Releases": [{
@@ -57,9 +58,7 @@ func (mcr *mockCommandRunner) SetOutput(output string) {
 	mcr.output = output
 }
 
-func (mcr mockCommandRunner) RunVoid() {
-
-}
+func (mcr mockCommandRunner) RunVoid() {}
 
 func (mcr *mockCommandRunner) Output() string {
 	return mcr.output
@@ -70,14 +69,21 @@ func (mcr mockCommandRunner) Setup(executable string, args []string) {
 	mcr.arguments = args
 }
 
-func (mcr mockCommandRunner) IgnoreError(ignoreError bool) {
+func (mcr mockCommandRunner) SetupWithoutOutput(executable string, args []string)  {
+	mcr.executable = executable
+	mcr.arguments = args
+}
 
+func (mcr mockCommandRunner) IgnoreError(ignoreError bool) {}
+
+func (mcr mockCommandRunner) Run() commandline.CommandOutput {
+	return commandline.CommandOutput{Output: mcr.output}
 }
 
 // https://quii.gitbook.io/learn-go-with-tests/
 // To run: go test -v
 func TestReleaseDeployed(t *testing.T) {
-	commandRunner := &mockCommandRunner{output: EXISTING_RELEASES_OUTPUT}
+	commandRunner := &mockCommandRunner{output: ExistingReleasesOutput}
 	d := NewHelmDeployer("charts", commandRunner)
 
 	if !d.DeployedReleasesExistsFor("traefik") {
@@ -90,7 +96,7 @@ func TestReleaseHasFailed(t *testing.T) {
 	d := NewHelmDeployer("charts",commandRunner)
 
 	// Given: a release (2nd one) has failed status
-	releasesList := d.ParseReleasesList(EXISTING_RELEASES_OUTPUT)
+	releasesList := d.ParseReleasesList(ExistingReleasesOutput)
 	release := releasesList.Releases[1]
 	release.Status = "FAILED"
 

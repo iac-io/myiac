@@ -58,7 +58,7 @@ func BuildCli() {
 		resizeClusterCmd,
 		createSecretCmd,
 		cryptCmd,
-		createCertCmd
+		createCertCmd,
 	}
 
 	err := app.Run(os.Args)

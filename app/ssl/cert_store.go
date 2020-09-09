@@ -2,6 +2,7 @@ package ssl
 
 import (
 	"github.com/dfernandezm/myiac/app/cluster"
+	"github.com/dfernandezm/myiac/app/commandline"
 	"os"
 )
 
@@ -30,5 +31,6 @@ func (kst *KubernetesSecretStore) Save(certificate *Certificate) {
 	tlsCertPath := "/tmp/tls.crt"
 	_ = os.Rename(certificate.privateKeyPath, tlsKeyPath)
 	_ = os.Rename(certificate.certPath, tlsCertPath)
-	cluster.CreateTlsSecret(kst.secretName, kst.namespace, tlsCertPath, tlsKeyPath)
+	kubernetesRunner := cluster.NewKubernetesRunner(commandline.NewEmpty())
+	kubernetesRunner.CreateTlsSecret(kst.secretName, kst.namespace, tlsCertPath, tlsKeyPath)
 }

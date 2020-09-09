@@ -33,7 +33,7 @@ func executeGetIpsCmd() map[string]interface{} {
 	cmd := commandline.New("kubectl", argsArray)
 	cmd.SupressOutput = true
 	cmdResult := cmd.Run()
-	cmdOutput := cmdResult.Output()
+	cmdOutput := cmdResult.Output
 	json := util.Parse(cmdOutput)
 	return json
 }
@@ -84,7 +84,19 @@ func CreateSecretFromLiteral(name string, namespace string, literals map[string]
 	cmd.Run()
 }
 
-func CreateTlsSecret(name string, namespace string, keyFile string, certFile string) {
+type KubernetesRunner interface {
+	CreateTlsSecret(name string, namespace string, keyFile string, certFile string)
+}
+
+type kubernetesRunner struct {
+	cmdRunner commandline.CommandRunner
+}
+
+func NewKubernetesRunner(commandRunner commandline.CommandRunner) *kubernetesRunner {
+	return &kubernetesRunner{cmdRunner:commandRunner}
+}
+
+func (kr *kubernetesRunner) CreateTlsSecret(name string, namespace string, keyFile string, certFile string) {
 	deleteSecret(name, namespace)
 	keysArg := ""
 
@@ -95,9 +107,9 @@ func CreateTlsSecret(name string, namespace string, keyFile string, certFile str
 
 	keysArg = strings.TrimSpace(keysArg)
 	argsArray := []string{"create", "secret", "tls", name, keysArg, "-n", namespace}
-	cmd := commandline.New("kubectl", argsArray)
-	cmd.SupressOutput = true
-	cmd.Run()
+
+	kr.cmdRunner.SetupWithoutOutput("kubectl", argsArray)
+	kr.cmdRunner.Run()
 }
 
 func deleteSecret(name string, namespace string) {

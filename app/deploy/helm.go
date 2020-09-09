@@ -26,17 +26,9 @@ type ReleasesList struct {
 	Releases []*Release // using pointer as it becomes mutable (useful for tests)
 }
 
-// CommandRunner Implicit interface for commandline package, need access to those methods here
-type CommandRunner interface {
-	RunVoid()
-	Output() string
-	Setup(cmd string, args []string)
-	IgnoreError(ignoreError bool)
-}
-
 type helmDeployer struct {
 	releases  ReleasesList
-	cmdRunner CommandRunner
+	cmdRunner commandline.CommandRunner
 	chartsPath string
 }
 
@@ -48,7 +40,7 @@ type HelmDeployment struct {
 	HelmValuesParams []string // yaml filenames to pass as --values
 }
 
-func NewHelmDeployer(chartsPath string, commandRunner CommandRunner) *helmDeployer {
+func NewHelmDeployer(chartsPath string, commandRunner commandline.CommandRunner) *helmDeployer {
 	hd := new(helmDeployer)
 	hd.releases = ReleasesList{}
 	hd.cmdRunner = commandRunner

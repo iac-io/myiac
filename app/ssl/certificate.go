@@ -18,7 +18,9 @@ type Certificate struct {
 // NewCertificateFromLocation Create a new certificate from paths to PEM and KEY files
 func NewCertificateFromLocation(domainName string, certPath string, privateKeyPath string) *Certificate {
 	certValue, privateKeyValue := certValuesFromPaths(certPath, privateKeyPath)
-	return &Certificate{Domain:domainName, cert: certValue,
+	return &Certificate{
+		Domain:domainName,
+		cert: certValue,
 		privateKey: privateKeyValue,
 		certPath: certPath,
 		privateKeyPath: privateKeyPath}
