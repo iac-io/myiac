@@ -3,11 +3,13 @@ package cli
 import (
 	"fmt"
 	"github.com/dfernandezm/myiac/app/cluster"
+	"github.com/dfernandezm/myiac/app/commandline"
 	"github.com/dfernandezm/myiac/app/deploy"
 	"github.com/dfernandezm/myiac/app/docker"
 	"github.com/dfernandezm/myiac/app/encryption"
 	"github.com/dfernandezm/myiac/app/gcp"
 	props "github.com/dfernandezm/myiac/app/properties"
+	"github.com/dfernandezm/myiac/app/secret"
 	"github.com/dfernandezm/myiac/app/ssl"
 	"github.com/dfernandezm/myiac/app/util"
 	"github.com/urfave/cli"
@@ -103,9 +105,13 @@ func createCertCmd(projectFlag *cli.StringFlag) cli.Command {
 			gcp.SetupEnvironment(project)
 
 			log.Printf("Creating certificate for %s from %s / %s \n", domainName, certPath, keyPath)
-			certificate := ssl.NewCertificateFromLocation(domainName, certPath, keyPath)
-			certStore := ssl.NewKubernetesSecretStore("default")
-			certStore.Save(certificate)
+
+			cmdLine := commandline.NewEmpty()
+			kubernetesRunner := cluster.NewKubernetesRunner(cmdLine)
+			secretManager := secret.NewKubernetesSecretManager("default", kubernetesRunner)
+			certificate := ssl.NewCertificate(domainName, certPath, keyPath)
+			certStore := ssl.NewSecretCertStore(secretManager)
+			certStore.Register(certificate)
 
 			return nil
 		},

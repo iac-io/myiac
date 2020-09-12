@@ -84,8 +84,11 @@ func CreateSecretFromLiteral(name string, namespace string, literals map[string]
 	cmd.Run()
 }
 
+// =======================================
+
 type KubernetesRunner interface {
 	CreateTlsSecret(name string, namespace string, keyFile string, certFile string)
+	FindSecret(name string, namespace string) string
 }
 
 type kubernetesRunner struct {
@@ -96,20 +99,27 @@ func NewKubernetesRunner(commandRunner commandline.CommandRunner) *kubernetesRun
 	return &kubernetesRunner{cmdRunner:commandRunner}
 }
 
-func (kr *kubernetesRunner) CreateTlsSecret(name string, namespace string, keyFile string, certFile string) {
+func (kr kubernetesRunner) CreateTlsSecret(name string, namespace string, keyFile string, certFile string) {
 	deleteSecret(name, namespace)
 	keysArg := ""
 
 	fmt.Printf("Adding key file: %s -> %s", keyFile, "*****\n")
-	keysArg += fmt.Sprintf("--key=%s", keyFile)
+	keyArg := fmt.Sprintf("--key=%s", keyFile)
 	fmt.Printf("Adding cert file: %s -> %s", certFile, "*****\n")
-	keysArg += fmt.Sprintf("--cert=%s", certFile)
+	certArg := fmt.Sprintf("--cert=%s", certFile)
 
 	keysArg = strings.TrimSpace(keysArg)
-	argsArray := []string{"create", "secret", "tls", name, keysArg, "-n", namespace}
+	argsArray := []string{"-n", namespace, "create", "secret", "tls", name, keyArg, certArg}
 
 	kr.cmdRunner.SetupWithoutOutput("kubectl", argsArray)
 	kr.cmdRunner.Run()
+}
+
+func (kr kubernetesRunner) FindSecret(name string, namespace string) string {
+	argsArray := []string{"get", "secret", name,"-n", namespace}
+	kr.cmdRunner.SetupWithoutOutput("kubectl", argsArray)
+	cmdOutput := kr.cmdRunner.Run()
+	return cmdOutput.Output
 }
 
 func deleteSecret(name string, namespace string) {
