@@ -1,9 +1,9 @@
 package ssl
 
 import (
-	"github.com/dfernandezm/myiac/app/cluster"
-	"github.com/dfernandezm/myiac/app/commandline"
-	"github.com/dfernandezm/myiac/app/secret"
+	"github.com/dfernandezm/myiac/internal/cluster"
+	"github.com/dfernandezm/myiac/internal/commandline"
+	"github.com/dfernandezm/myiac/internal/secret"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

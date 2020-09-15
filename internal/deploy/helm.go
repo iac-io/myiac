@@ -3,8 +3,8 @@ package deploy
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/dfernandezm/myiac/app/commandline"
-	"github.com/dfernandezm/myiac/app/util"
+	"github.com/dfernandezm/myiac/internal/commandline"
+	"github.com/dfernandezm/myiac/internal/util"
 	"io/ioutil"
 	"log"
 	"strings"
@@ -27,8 +27,8 @@ type ReleasesList struct {
 }
 
 type helmDeployer struct {
-	releases  ReleasesList
-	cmdRunner commandline.CommandRunner
+	releases   ReleasesList
+	cmdRunner  commandline.CommandRunner
 	chartsPath string
 }
 

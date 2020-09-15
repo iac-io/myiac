@@ -3,7 +3,7 @@ package gcp
 import (
 	"context"
 	"fmt"
-	"github.com/dfernandezm/myiac/app/util"
+	"github.com/dfernandezm/myiac/internal/util"
 	"google.golang.org/api/iterator"
 	"log"
 
