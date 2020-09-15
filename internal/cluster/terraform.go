@@ -2,8 +2,8 @@ package cluster
 
 import (
 	"fmt"
-	"github.com/dfernandezm/myiac/app/commandline"
-	"github.com/dfernandezm/myiac/app/util"
+	"github.com/dfernandezm/myiac/internal/commandline"
+	"github.com/dfernandezm/myiac/internal/util"
 )
 
 func ApplyDnsIpChange(tfFileLocation string, ip string) {

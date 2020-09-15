@@ -2,8 +2,8 @@ package ssl
 
 import (
 	"fmt"
-	"github.com/dfernandezm/myiac/app/secret"
-	"github.com/dfernandezm/myiac/app/util"
+	"github.com/dfernandezm/myiac/internal/secret"
+	"github.com/dfernandezm/myiac/internal/util"
 	"log"
 )
 

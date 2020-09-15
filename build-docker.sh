@@ -1,5 +1,5 @@
 #!/bin/bash
-# Convert to makefile?
+
 CHARTS_LOCATION=$1
 TAG=$2
 cp ~/account.json .

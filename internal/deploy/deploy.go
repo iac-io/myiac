@@ -2,10 +2,10 @@ package deploy
 
 import (
 	"fmt"
-	"github.com/dfernandezm/myiac/app/cluster"
-	"github.com/dfernandezm/myiac/app/commandline"
-	"github.com/dfernandezm/myiac/app/gcp"
-	"github.com/dfernandezm/myiac/app/util"
+	"github.com/dfernandezm/myiac/internal/cluster"
+	"github.com/dfernandezm/myiac/internal/commandline"
+	"github.com/dfernandezm/myiac/internal/gcp"
+	"github.com/dfernandezm/myiac/internal/util"
 	"os"
 	"strings"
 )

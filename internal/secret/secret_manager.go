@@ -1,7 +1,7 @@
 package secret
 
 import (
-	"github.com/dfernandezm/myiac/app/cluster"
+	"github.com/dfernandezm/myiac/internal/cluster"
 	"os"
 )
 
@@ -24,7 +24,7 @@ func NewTlsSecret(name string, tlsCertPath string, tlsKeyPath string) TlsSecret 
 }
 
 type kubernetesSecretManager struct {
-	namespace string
+	namespace        string
 	kubernetesRunner cluster.KubernetesRunner
 }
 
