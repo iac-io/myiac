@@ -2,7 +2,7 @@ package gcp
 
 import (
 	"fmt"
-	"github.com/dfernandezm/myiac/app/util"
+	"github.com/dfernandezm/myiac/internal/util"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"

@@ -2,9 +2,9 @@ package cluster
 
 import (
 	"fmt"
-	"github.com/dfernandezm/myiac/app/commandline"
-	"github.com/dfernandezm/myiac/app/gcp"
-	"github.com/dfernandezm/myiac/app/util"
+	"github.com/dfernandezm/myiac/internal/commandline"
+	"github.com/dfernandezm/myiac/internal/gcp"
+	"github.com/dfernandezm/myiac/internal/util"
 	"time"
 )
 

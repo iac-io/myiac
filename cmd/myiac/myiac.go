@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/dfernandezm/myiac/app/cli"
+	"github.com/dfernandezm/myiac/internal/cli"
 )
 
 const (

@@ -39,7 +39,7 @@ func GetStringValue(jsonMap interface{}, key string) string {
 	return jsonMap.(map[string]interface{})[key].(string)
 }
 
-func getString(value interface{}) string {
+func asString(value interface{}) string {
 	return value.(string)
 }
 

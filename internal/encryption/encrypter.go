@@ -1,6 +1,6 @@
 package encryption
 
-import "github.com/dfernandezm/myiac/app/util"
+import "github.com/dfernandezm/myiac/internal/util"
 
 type Encrypter interface {
 	Encrypt(plainText string) (string, error)
