@@ -3,14 +3,11 @@ package cli
 import (
 	"fmt"
 	"github.com/dfernandezm/myiac/internal/cluster"
-	"github.com/dfernandezm/myiac/internal/commandline"
 	"github.com/dfernandezm/myiac/internal/deploy"
 	"github.com/dfernandezm/myiac/internal/docker"
 	"github.com/dfernandezm/myiac/internal/encryption"
 	"github.com/dfernandezm/myiac/internal/gcp"
 	props "github.com/dfernandezm/myiac/internal/properties"
-	"github.com/dfernandezm/myiac/internal/secret"
-	"github.com/dfernandezm/myiac/internal/ssl"
 	"github.com/dfernandezm/myiac/internal/util"
 	"github.com/urfave/cli"
 	"log"
@@ -35,7 +32,8 @@ func BuildCli() {
 	projectFlag := &cli.StringFlag{Name: "project, p", Usage: "The project to refer to (projects folder manifests)"}
 	propertiesFlag := &cli.StringFlag{Name: "properties", Usage: "Properties for deployments"}
 
-	setupEnvironment := setupEnvironmentCmd(projectFlag, environmentFlag)
+	keyPath := &cli.StringFlag{Name: "keyPath", Usage: "SA key path"}
+	setupEnvironment := setupEnvironmentCmd(projectFlag, keyPath)
 	dockerSetup := dockerSetupCmd(projectFlag, environmentFlag)
 	dockerBuild := dockerBuildCmd(projectFlag)
 
@@ -47,7 +45,7 @@ func BuildCli() {
 	resizeClusterCmd := resizeClusterCmd(projectFlag, environmentFlag)
 	createSecretCmd := createSecretCmd(projectFlag, environmentFlag)
 	cryptCmd := cryptCmd(projectFlag)
-	createCertCmd := createCertCmd(projectFlag)
+	createCertCmd := createCertCmd()
 
 	app.Commands = []cli.Command{
 		setupEnvironment,
@@ -66,55 +64,6 @@ func BuildCli() {
 	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
-	}
-}
-
-
-func createCertCmd(projectFlag *cli.StringFlag) cli.Command {
-
-	keyPathFlag := &cli.StringFlag{
-		Name: "keyPath, k",
-		Usage: "Location of file with private key",
-	}
-
-	certPathFlag := &cli.StringFlag{
-		Name: "certPath, c",
-		Usage: "Cert path flag",
-	}
-
-	return cli.Command{
-		Name:  "createCert",
-		Usage: "Create certificate from files",
-		Flags: []cli.Flag{
-			projectFlag,
-			keyPathFlag,
-			certPathFlag,
-		},
-		Action: func(c *cli.Context) error {
-			fmt.Printf("Validating flags for createCert \n")
-
-			_ = validateStringFlagPresence("project", c)
-			_ = validateStringFlagPresence("keyPath", c)
-			_ = validateStringFlagPresence("certPath", c)
-
-			project := c.String("project")
-			keyPath := c.String("keyPath")
-			certPath := c.String("certPath")
-			domainName := ""
-
-			gcp.SetupEnvironment(project)
-
-			log.Printf("Creating certificate for %s from %s / %s \n", domainName, certPath, keyPath)
-
-			cmdLine := commandline.NewEmpty()
-			kubernetesRunner := cluster.NewKubernetesRunner(cmdLine)
-			secretManager := secret.NewKubernetesSecretManager("default", kubernetesRunner)
-			certificate := ssl.NewCertificate(domainName, certPath, keyPath)
-			certStore := ssl.NewSecretCertStore(secretManager)
-			certStore.Register(certificate)
-
-			return nil
-		},
 	}
 }
 
@@ -176,7 +125,7 @@ func cryptCmd(projectFlag *cli.StringFlag) cli.Command {
 }
 
 func resizeClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag) cli.Command {
-	nodePoolsSizeFlag := &cli.StringFlag{Name: "nodePoolsSize, bp",
+	nodePoolsSizeFlag := &cli.StringFlag{Name: "nodePoolsSize",
 		Usage: "Target size of all node pools"}
 	return cli.Command{
 		Name:  "resizeCluster",
@@ -205,32 +154,6 @@ func resizeClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFl
 		},
 	}
 }
-
-func setupEnvironmentCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag) cli.Command {
-	return cli.Command{
-		Name:  "setupEnvironment",
-		Usage: "Setup the environment with the cloud provider",
-		Flags: []cli.Flag{
-			projectFlag,
-			environmentFlag,
-		},
-		Action: func(c *cli.Context) error {
-			fmt.Printf("Validating flags for setupEnvironment\n")
-			_ = validateBaseFlags(c)
-
-			project := c.String("project")
-			env := c.String("env")
-
-			gcp.SetupEnvironment(project)
-
-			//TODO: read from project manifest
-			zone := "europe-west1-b"
-			gcp.SetupKubernetes(project, zone, env)
-			return nil
-		},
-	}
-}
-
 
 // https://cloud.google.com/iam/docs/creating-managing-service-account-keys
 func createSecretCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag) cli.Command {
@@ -506,18 +429,7 @@ func installHelmCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag
 // --- Aux functions ---
 
 func validateBaseFlags(ctx *cli.Context) error {
-	project := validateStringFlagPresence("project", ctx)
-	
-	if project != "moneycol" {
-		return cli.NewExitError("Project not supported: " + project, -1)
-	}
-
-	env := validateStringFlagPresence("env", ctx)
-
-	if env != "dev" {
-		return cli.NewExitError("Invalid environment: " + env, -1)
-	} 
-
+	validateStringFlagPresence("project", ctx)
 	return nil
 }
 
@@ -558,18 +470,12 @@ func logErrorAndExit(errorMsg string) {
 }
 
 func validateStringFlagPresence(flagName string, ctx *cli.Context) string {
-	fmt.Printf("Validating flag %s\n", flagName)
+	log.Printf("Validating flag %s\n", flagName)
 	flag := ctx.String(flagName)
-	fmt.Printf("Read flag %s as %s\n", flagName, flag)
-
 	if flag == "" {
-		errorMsg := fmt.Sprintf("%s parameter not provided", flagName)
-		err := cli.NewExitError(errorMsg, -1)
-		if err != nil {
-			log.Fatalf(errorMsg, err)
-		}
+		log.Fatalf("%s parameter not provided\n", flagName)
 	}
-
+	log.Printf("Read flag %s as %s\n", flagName, flag)
 	return flag
 }
 

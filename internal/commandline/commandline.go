@@ -22,12 +22,12 @@ type CommandRunner interface {
 }
 
 type commandExec struct {
-	executable    string
-	arguments     []string
-	commandOutput string
-	workingDir    string
-	SupressOutput bool
-	ignoreError  bool
+	executable       string
+	arguments        []string
+	commandOutput    string
+	workingDir       string
+	IsSuppressOutput bool
+	ignoreError      bool
 }
 
 type CommandOutput struct {
@@ -36,6 +36,15 @@ type CommandOutput struct {
 
 func NewEmpty() *commandExec {
 	ce := &commandExec{"", make([]string, 0), "", "",
+		false, false}
+	return ce
+}
+
+func NewCommandLine(commandLine string) *commandExec {
+	commandParts := strings.Split(commandLine, " ")
+	executable := commandParts[0]
+	args := commandParts[1:]
+	ce := &commandExec{executable, args, "", "",
 		false, false}
 	return ce
 }
@@ -60,7 +69,7 @@ func (c *commandExec) Setup(executable string, arguments []string) {
 func (c *commandExec) SetupWithoutOutput(executable string, arguments []string)  {
 	c.executable = executable
 	c.arguments = arguments
-	c.SupressOutput = true
+	c.IsSuppressOutput = true
 }
 
 func (c *commandExec) SetWorkingDir(workingDir string) {
@@ -78,8 +87,8 @@ func (c *commandExec) Run() CommandOutput {
 	cmdStr := string(strings.Join(cmd.Args, " "))
 	fmt.Printf("Executing [ %s ]\n", cmdStr)
 
-	// output, err := withCombinedOutput(cmd, c.SupressOutput)
-	output, err := withProgress(cmd, c.SupressOutput, c.ignoreError)
+	// output, err := withCombinedOutput(cmd, c.IsSuppressOutput)
+	output, err := withProgress(cmd, c.IsSuppressOutput, c.ignoreError)
 
 	if err != nil && !c.ignoreError {
 		log.Fatalf("command [ %s ] failed with %s\n", cmdStr, err)
@@ -115,7 +124,7 @@ func (c *commandExec) saveOutput(output string) {
 }
 
 func (c *commandExec) SuppressOutput(suppressOutput bool) {
-	c.SupressOutput = suppressOutput
+	c.IsSuppressOutput = suppressOutput
 }
 
 func withCombinedOutput(cmd *exec.Cmd, suppressOutput bool) (string, error) {
