@@ -17,7 +17,7 @@ import (
 
 type nodePoolList []map[string]interface{}
 
-
+// Deprecated see provider.go / setup_environment.go
 func SetupEnvironment(projectId string) {
 	keyLocation := util.GetHomeDir() + fmt.Sprintf("/%s_account.json", projectId)
 	baseArgs := "auth activate-service-account --key-file %s"
@@ -34,6 +34,7 @@ func ConfigureDocker() {
 	cmd.Run()
 }
 
+// Deprecated
 func SetupKubernetes(project string, zone string, environment string) {
 	action := "container clusters get-credentials"
 	// gcloud container clusters get-credentials [cluster-name]
@@ -91,7 +92,7 @@ func ResizeCluster(project string, zone string, environment string, targetSize i
 	for _,np := range nodePools {
 		nodePoolName := np["name"]
 		nodePoolNameStr, _ := nodePoolName.(string)
-		fmt.Printf("Resizing node pool %s to %d", nodePoolName, targetSize)
+		fmt.Printf("Resizing node pool %s to %d\n", nodePoolName, targetSize)
 		targetSizeStr := strconv.Itoa(targetSize)
 		nodePoolResizeArray := util.StringTemplateToArgsArray(nodePoolResizeTpl, nodePoolNameStr, targetSizeStr)
 		nodePoolResizePart := strings.Join(nodePoolResizeArray, " ")

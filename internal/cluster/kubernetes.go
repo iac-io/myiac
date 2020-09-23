@@ -31,7 +31,7 @@ func GetPods() {
 func executeGetIpsCmd() map[string]interface{} {
 	argsArray := []string{"get", "nodes", "-o", "json"}
 	cmd := commandline.New("kubectl", argsArray)
-	cmd.SupressOutput = true
+	cmd.IsSuppressOutput = true
 	cmdResult := cmd.Run()
 	cmdOutput := cmdResult.Output
 	json := util.Parse(cmdOutput)
@@ -64,7 +64,7 @@ func CreateSecret(name string, namespace string, jsonKeyPath string) {
 	fromFileArg := "--from-file=" + name + ".json=" + jsonKeyPath
 	argsArray := []string{"create", "secret", "generic", name, fromFileArg, "-n", namespace}
 	cmd := commandline.New("kubectl", argsArray)
-	cmd.SupressOutput = true
+	cmd.IsSuppressOutput = true
 	cmd.Run()
 }
 
@@ -80,11 +80,11 @@ func CreateSecretFromLiteral(name string, namespace string, literals map[string]
 	fromLiteralArg = strings.TrimSpace(fromLiteralArg)
 	argsArray := []string{"create", "secret", "generic", name, fromLiteralArg, "-n", namespace}
 	cmd := commandline.New("kubectl", argsArray)
-	cmd.SupressOutput = true
+	cmd.IsSuppressOutput = true
 	cmd.Run()
 }
 
-// =======================================
+// ================= Move this to new file ======================
 
 type KubernetesRunner interface {
 	CreateTlsSecret(name string, namespace string, keyFile string, certFile string)
@@ -125,7 +125,7 @@ func (kr kubernetesRunner) FindSecret(name string, namespace string) string {
 func deleteSecret(name string, namespace string) {
 	argsArray := []string{"delete", "secret", name, "-n", namespace}
 	cmd := commandline.New("kubectl", argsArray)
-	cmd.SupressOutput = true
+	cmd.IsSuppressOutput = true
 	cmd.IgnoreError(true)
 	cmd.Run()
 }

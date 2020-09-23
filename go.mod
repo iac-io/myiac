@@ -4,12 +4,15 @@ go 1.13
 
 require (
 	cloud.google.com/go v0.38.0
+	github.com/magiconair/properties v1.8.4
 	github.com/rs/zerolog v1.18.0
+	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/stretchr/testify v1.5.1
 	github.com/urfave/cli v1.22.4
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	google.golang.org/api v0.21.0
 	google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
+	gopkg.in/ini.v1 v1.61.0
 	gopkg.in/yaml.v2 v2.2.8
 )
