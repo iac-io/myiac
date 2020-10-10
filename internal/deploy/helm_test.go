@@ -80,6 +80,10 @@ func (mcr mockCommandRunner) Run() commandline.CommandOutput {
 	return commandline.CommandOutput{Output: mcr.output}
 }
 
+func (mcr mockCommandRunner) SetupCmdLine(cmdLine string) {
+	// ignored
+}
+
 // https://quii.gitbook.io/learn-go-with-tests/
 // To run: go test -v
 func TestReleaseDeployed(t *testing.T) {

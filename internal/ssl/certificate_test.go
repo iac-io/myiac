@@ -40,6 +40,10 @@ func (fk fakeKubernetesRunner) Setup(cmd string, args []string) {
 func (fk fakeKubernetesRunner) IgnoreError(ignoreError bool) {
 }
 
+func (fk fakeKubernetesRunner) SetupCmdLine(cmdLine string) {
+}
+
+
 func TestCreateTlsCertificate(t *testing.T) {
 	// setup
 	cmdLine := new(fakeKubernetesRunner)

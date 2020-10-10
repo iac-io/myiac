@@ -17,6 +17,7 @@ type CommandRunner interface {
 	Output() string
 	Setup(cmd string, args []string)
 	SetupWithoutOutput(cmd string, args []string)
+	SetupCmdLine(cmdLine string)
 	IgnoreError(ignoreError bool)
 	Run() CommandOutput
 }
@@ -59,6 +60,13 @@ func NewWithWorkingDir(executable string, arguments []string, workingDir string)
 	ce := &commandExec{executable, arguments, "", workingDir,
 		false, false}
 	return ce
+}
+
+func (c *commandExec) SetupCmdLine(cmdLine string) {
+	commandParts := strings.Split(cmdLine, " ")
+	c.executable = commandParts[0]
+	c.arguments = commandParts[1:]
+
 }
 
 func (c *commandExec) Setup(executable string, arguments []string) {

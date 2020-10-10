@@ -2,8 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"github.com/dfernandezm/myiac/internal/cluster"
-	"github.com/dfernandezm/myiac/internal/commandline"
 	"github.com/dfernandezm/myiac/internal/secret"
 	"github.com/dfernandezm/myiac/internal/ssl"
 	"github.com/urfave/cli"
@@ -45,11 +43,9 @@ func createCertCmd() cli.Command {
 
 			log.Printf("Creating certificate for %s from %s - %s \n", domainName, certPath, keyPath)
 
-			providerSetup()
+			ProviderSetup()
 
-			cmdLine := commandline.NewEmpty()
-			kubernetesRunner := cluster.NewKubernetesRunner(cmdLine)
-			secretManager := secret.NewKubernetesSecretManager("default", kubernetesRunner)
+			secretManager := secret.CreateKubernetesSecretManager("default")
 			certificate := ssl.NewCertificate(domainName, certPath, keyPath)
 			certStore := ssl.NewSecretCertStore(secretManager)
 			certStore.Register(certificate)
@@ -65,9 +61,4 @@ func validateFlags(c *cli.Context) {
 	_ = validateStringFlagPresence("domain", c)
 }
 
-func providerSetup() {
-	providerFactory := ProviderFactory{}
-	provider := providerFactory.getProvider()
-	provider.Setup()
-	provider.ClusterSetup()
-}
+
