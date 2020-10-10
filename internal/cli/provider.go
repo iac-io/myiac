@@ -82,6 +82,13 @@ func (gcp GcpProvider) saveGkePreferences(clusterName string, zone string) {
 	prefs.Set("gke.clusterZone", zone)
 }
 
+func ProviderSetup() {
+	providerFactory := ProviderFactory{}
+	provider := providerFactory.getProvider()
+	provider.Setup()
+	provider.ClusterSetup()
+}
+
 func validateKeyLocation(keyLocation string) {
 	if !util.FileExists(keyLocation) {
 		err := fmt.Errorf("key path is invalid %s\n", keyLocation)

@@ -17,7 +17,8 @@ import (
 
 type nodePoolList []map[string]interface{}
 
-// Deprecated see provider.go / setup_environment.go
+// Deprecated
+// see provider.go / setup_environment.go
 func SetupEnvironment(projectId string) {
 	keyLocation := util.GetHomeDir() + fmt.Sprintf("/%s_account.json", projectId)
 	baseArgs := "auth activate-service-account --key-file %s"

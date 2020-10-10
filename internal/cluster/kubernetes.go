@@ -54,20 +54,6 @@ func getAllIps(json map[string]interface{}, internal bool) []string {
 	return ips
 }
 
-// Creates a generic secret in a Kubernetes namespace from an existing
-// service account key
-//
-// See: https://stackoverflow.com/questions/45879498/how-can-i-update-a-secret-on-kubernetes-when-it-is-generated-from-a-file
-// kubectl create secret generic firestore-key --from-file=key.json=/Users/david/moneycol-firestore-collections-api.json
-func CreateSecret(name string, namespace string, jsonKeyPath string) {
-	deleteSecret(name, namespace)
-	fromFileArg := "--from-file=" + name + ".json=" + jsonKeyPath
-	argsArray := []string{"create", "secret", "generic", name, fromFileArg, "-n", namespace}
-	cmd := commandline.New("kubectl", argsArray)
-	cmd.IsSuppressOutput = true
-	cmd.Run()
-}
-
 // kubectl create secret generic dev-db-secret --from-literal=username=devuser --from-literal=password='S!B\*d$zDsb='
 func CreateSecretFromLiteral(name string, namespace string, literals map[string]string) {
 	deleteSecret(name, namespace)
@@ -88,6 +74,7 @@ func CreateSecretFromLiteral(name string, namespace string, literals map[string]
 
 type KubernetesRunner interface {
 	CreateTlsSecret(name string, namespace string, keyFile string, certFile string)
+	CreateFileSecret(name string, namespace string, filePath string)
 	FindSecret(name string, namespace string) string
 }
 
@@ -99,6 +86,7 @@ func NewKubernetesRunner(commandRunner commandline.CommandRunner) *kubernetesRun
 	return &kubernetesRunner{cmdRunner:commandRunner}
 }
 
+// CreateTlsSecret create a TLS based secret in Kubernetes, used to store SSL certificates from its cert and key files
 func (kr kubernetesRunner) CreateTlsSecret(name string, namespace string, keyFile string, certFile string) {
 	deleteSecret(name, namespace)
 	keysArg := ""
@@ -112,6 +100,19 @@ func (kr kubernetesRunner) CreateTlsSecret(name string, namespace string, keyFil
 	argsArray := []string{"-n", namespace, "create", "secret", "tls", name, keyArg, certArg}
 
 	kr.cmdRunner.SetupWithoutOutput("kubectl", argsArray)
+	kr.cmdRunner.Run()
+}
+
+// CreateSecret creates a generic secret in a Kubernetes namespace from an existing
+// service account key JSON file
+//
+// See: https://stackoverflow.com/questions/45879498/how-can-i-update-a-secret-on-kubernetes-when-it-is-generated-from-a-file
+// Example: kubectl create secret generic firestore-key --from-file=key.json=/path/to/moneycol-firestore-collections-api.json
+func (kr kubernetesRunner) CreateFileSecret(name string, namespace string, jsonKeyPath string) {
+	deleteSecret(name, namespace)
+	fromFileArg := fmt.Sprintf("--from-file=%s.json=%s", name, jsonKeyPath)
+	cmdLine := fmt.Sprintf("kubectl create secret generic %s %s -n %s", name, fromFileArg, namespace)
+	kr.cmdRunner.SetupCmdLine(cmdLine)
 	kr.cmdRunner.Run()
 }
 

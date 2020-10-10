@@ -2,6 +2,7 @@ package secret
 
 import (
 	"github.com/dfernandezm/myiac/internal/cluster"
+	"github.com/dfernandezm/myiac/internal/commandline"
 	"os"
 )
 
@@ -28,11 +29,15 @@ type kubernetesSecretManager struct {
 	kubernetesRunner cluster.KubernetesRunner
 }
 
-func NewKubernetesSecretManager(namespace string, kuberneetesRunner cluster.KubernetesRunner) *kubernetesSecretManager {
+func NewKubernetesSecretManager(namespace string, kubernetesRunner cluster.KubernetesRunner) *kubernetesSecretManager {
 	return &kubernetesSecretManager{
 		namespace: namespace,
-		kubernetesRunner:kuberneetesRunner,
+		kubernetesRunner: kubernetesRunner,
 	}
+}
+
+func CreateKubernetesSecretManager(namespace string) *kubernetesSecretManager {
+	return NewKubernetesSecretManager(namespace, cluster.NewKubernetesRunner(commandline.NewEmpty()))
 }
 
 func (ksm kubernetesSecretManager) CreateTlsSecret(secret TlsSecret) {
@@ -45,4 +50,8 @@ func (ksm kubernetesSecretManager) CreateTlsSecret(secret TlsSecret) {
 
 func (ksm kubernetesSecretManager) FindTlsSecret(secretName string) {
 	ksm.kubernetesRunner.FindSecret(secretName, ksm.namespace)
+}
+
+func (ksm kubernetesSecretManager) CreateFileSecret(secretName string, filePath string) {
+	ksm.kubernetesRunner.CreateFileSecret(secretName, ksm.namespace, filePath)
 }
