@@ -83,3 +83,28 @@ func createSecretCmd() cli.Command {
 		},
 	}
 }
+
+func serviceAccountKeyAsSecret(secretName string, saEmail string, recreateKey bool) error {
+	fmt.Printf("Creating secret for service account %s\n", saEmail)
+
+	jsonKey, err := gcp.KeyForServiceAccount(saEmail, recreateKey)
+
+	if err != nil {
+		fmt.Printf("Error generating Key for SA %s %v", saEmail, err)
+		return err
+	}
+
+	// Naming convention, secret and key file share the name
+	filePath := fmt.Sprintf("/tmp/%s.json", secretName)
+	writeErr := util.WriteStringToFile(jsonKey, filePath)
+
+	if writeErr != nil {
+		fmt.Printf("Error writing Key to file %v\n", writeErr)
+		return writeErr
+	}
+
+	kubeSecretManager := secret.CreateKubernetesSecretManager("default")
+	kubeSecretManager.CreateFileSecret(secretName, filePath)
+
+	return nil
+}

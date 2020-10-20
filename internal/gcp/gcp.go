@@ -77,6 +77,7 @@ func ListClusterNodePools(project string, zone string, environment string) nodeP
 	fmt.Printf("Node Pools in cluster %s: %v\n", clusterName, nodePools)
 	return nodePools	
 }
+
 // ResizeCluster change the size of GKE cluster node pools to the provided values
 //
 // The resize command needs to be executed once per node pool:
