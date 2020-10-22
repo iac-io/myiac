@@ -43,7 +43,8 @@ func createSecretCmd() cli.Command {
 			if len(saEmail) > 0 {
 				fmt.Printf("Creating secret for service account %s\n", saEmail)
 
-				jsonKey, err := gcp.KeyForServiceAccount(saEmail, recreateKey)
+				saClient := gcp.NewDefaultServiceAccountClient()
+				jsonKey, err := saClient.KeyForServiceAccount(saEmail, recreateKey)
 
 				if err != nil {
 					fmt.Printf("Error generating Key for SA %s %v", saEmail, err)
@@ -69,6 +70,7 @@ func createSecretCmd() cli.Command {
 
 				if len(literalArr) >= 2 {
 					//TODO: support multiple literals comma separated
+					//TODO: add this to the kubeSecretManager
 					literalMap := make(map[string]string)
 					literalMap[literalArr[0]] = literalArr[1]
 					cluster.CreateSecretFromLiteral(secretName, "default", literalMap)
@@ -86,8 +88,8 @@ func createSecretCmd() cli.Command {
 
 func serviceAccountKeyAsSecret(secretName string, saEmail string, recreateKey bool) error {
 	fmt.Printf("Creating secret for service account %s\n", saEmail)
-
-	jsonKey, err := gcp.KeyForServiceAccount(saEmail, recreateKey)
+	saClient := gcp.NewDefaultServiceAccountClient()
+	jsonKey, err := saClient.KeyForServiceAccount(saEmail, recreateKey)
 
 	if err != nil {
 		fmt.Printf("Error generating Key for SA %s %v", saEmail, err)

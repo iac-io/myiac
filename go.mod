@@ -4,7 +4,6 @@ go 1.13
 
 require (
 	cloud.google.com/go v0.38.0
-	github.com/magiconair/properties v1.8.4
 	github.com/rs/zerolog v1.18.0
 	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/stretchr/testify v1.5.1
