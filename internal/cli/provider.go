@@ -5,6 +5,8 @@ import (
 	"github.com/dfernandezm/myiac/internal/commandline"
 	"github.com/dfernandezm/myiac/internal/preferences"
 	"github.com/dfernandezm/myiac/internal/util"
+	"regexp"
+	"strings"
 )
 
 type Provider interface {
@@ -38,6 +40,7 @@ func (pf ProviderFactory) getProvider() Provider {
 type GcpProvider struct {
 	projectId string
 	keyLocation string
+	masterSaEmail string
 	gkeCluster GkeCluster
 }
 
@@ -49,11 +52,44 @@ func NewGcpProvider(projectId string, keyLocation string, gkeCluster GkeCluster)
 }
 
 // Setup activate master service account from key
-func (gcp GcpProvider) Setup() {
-	cmdLine := fmt.Sprintf("gcloud auth activate-service-account --key-file %s", gcp.keyLocation)
+func (gcp *GcpProvider) Setup() {
+	setupDone := gcp.checkSetup()
+	if !setupDone {
+		cmdLine := fmt.Sprintf("gcloud auth activate-service-account --key-file %s", gcp.keyLocation)
+		cmd := commandline.NewCommandLine(cmdLine)
+		cmdOutput := cmd.Run()
+		gcp.masterSaEmail = extractServiceAccountEmail(cmdOutput.Output)
+		gcp.savePreferences()
+	}
+}
+
+func (gcp GcpProvider) checkSetup() bool {
+	cmdLine := fmt.Sprintf("gcloud auth list --format json")
 	cmd := commandline.NewCommandLine(cmdLine)
-	cmd.Run()
-	gcp.savePreferences()
+	cmdOutput := cmd.Run()
+	authList := util.ParseArray(cmdOutput.Output)
+
+	for _, accountAuth := range authList {
+		saEmail := accountAuth["account"]
+		status := accountAuth["status"]
+
+		fmt.Printf("Checking account %s\n", saEmail)
+		if status == "ACTIVE"  {
+			fmt.Printf("Already authenticated for %s\n", saEmail)
+			return true
+		}
+	}
+
+	return false
+}
+
+func extractServiceAccountEmail(setupCmdOutput string) string {
+	re := regexp.MustCompile(`\[.*\]`)
+	saEmail := re.FindString(setupCmdOutput)
+	saEmail = strings.Replace(saEmail, "[", "", -1)
+	saEmail = strings.Replace(saEmail, "]", "", -1)
+	fmt.Printf("%q\n", saEmail)
+	return saEmail
 }
 
 // ClusterSetup gcloud container clusters get-credentials [cluster-name]
@@ -74,6 +110,7 @@ func (gcp GcpProvider) savePreferences() {
 	prefs.Set("provider", "gcp")
 	prefs.Set("keyLocation", gcp.keyLocation)
 	prefs.Set("project", gcp.projectId)
+	prefs.Set("masterSaEmail", gcp.masterSaEmail)
 }
 
 func (gcp GcpProvider) saveGkePreferences(clusterName string, zone string) {
