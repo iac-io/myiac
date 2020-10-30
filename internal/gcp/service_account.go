@@ -1,170 +1,29 @@
 package gcp
 
 import (
-	"cloud.google.com/go/storage"
-	"context"
 	"fmt"
 	"github.com/dfernandezm/myiac/internal/util"
 	"google.golang.org/api/iam/v1"
-	"io"
 	"os"
 	"strings"
 )
 
-// IamClient wrapper interface around GCP Service Account Client that allows creation and listing of Service Account keys.
-// Instead of extracting the exact methods from GCP *iam.Service, they are wrapped on these 2 operations (CreateKey, ListKeys).
-// This is due to the complicated call chains inside *iam.Service (i.e. 'Projects.ServiceAccounts.Keys.Create(...)')
-type IamClient interface {
-	CreateKey(request *iam.CreateServiceAccountKeyRequest, resource string) (*iam.ServiceAccountKey, error)
-	ListKeys(resource string) (*iam.ListServiceAccountKeysResponse, error)
-}
-
-// gcpIamClient private implementation of the above interface that actually wraps the operations
-type gcpIamClient struct {
-	iamService *iam.Service
-	ctx context.Context
-}
-
-// NewGcpIamClient Creates a new IamClient with external provided context and *iam.Service
-func NewGcpIamClient(ctx context.Context, iamService *iam.Service) *gcpIamClient {
-	return &gcpIamClient{iamService: iamService, ctx: ctx}
-}
-
-// NewGcpIamClient Creates a new IamClient with default context.
-// Authentication against GCP must have already been performed when invoking this operation
-func NewDefaultIamClient() *gcpIamClient {
-	ctx := context.Background()
-	return NewGcpIamClient(ctx, getIamService(ctx))
-}
-
-func (gic *gcpIamClient) CreateKey(request *iam.CreateServiceAccountKeyRequest, resource string) (*iam.ServiceAccountKey, error) {
-	return gic.iamService.Projects.ServiceAccounts.Keys.Create(resource, request).Do()
-}
-
-func (gic *gcpIamClient) ListKeys(resource string) (*iam.ListServiceAccountKeysResponse, error) {
-	return gic.iamService.Projects.ServiceAccounts.Keys.List(resource).Do()
-}
-
-func getIamService(ctx context.Context) *iam.Service {
-	service, err := iam.NewService(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return service
-}
-
-// ObjectStorageClient is the interface for the client.Storage GCP SDK operations so they can be mocked in tests
-// or injected
-type ObjectStorageClient interface {
-	Bucket(bucketName string) *storage.BucketHandle
-}
-
-// ObjectStorageCache allows management of basic object storage operations in GCP (write, read).
-// Abstracts the operations needed from the GCP SDK
-type ObjectStorageCache interface {
-	Write(ctx context.Context, bucketName string, key string, content interface{}) error
-	Read(ctx context.Context, bucketName string, objectKey string) (interface{},error)
-}
-
-const keysCacheBucketName = "moneycol-keys"
-
-// gcpObjectStorageCache Implements 'ObjectStorageCache' and uses the interface
-// 'ObjectStorageClient' to perform the base operations
-type gcpObjectStorageCache struct {
-	client ObjectStorageClient
-	ctx context.Context
-}
-
-// NewGcpObjectStorageCache creates a GCP-based Object Storage cache, optionally
-// receiving a Context. It injects a ObjectStorageClient providing the base operations
-func NewGcpObjectStorageCache(ctx context.Context, client ObjectStorageClient) *gcpObjectStorageCache {
-	return &gcpObjectStorageCache{client:client, ctx:ctx}
-}
-
-// NewDefaultObjectStorageCache creates a GCP-based Object Storage cache using a
-// inner context
-func NewDefaultObjectStorageCache() *gcpObjectStorageCache {
-	ctx := context.Background()
-	return NewGcpObjectStorageCache(ctx, getObjectStorageClient(ctx))
-}
-
-// Write writes the given 'objectContent' into a bucket called 'bucketName' with
-// key 'key'. If a Context is passed, it's used instead of the default one to
-// regenerate the GCP SDK client
-func (gosc *gcpObjectStorageCache) Write(ctx context.Context, bucketName string, key string, objectContent interface{}) error {
-	// replace context with provided
-	if ctx != nil {
-		gosc.client = getObjectStorageClient(ctx)
-	} else {
-		ctx = context.Background()
-	}
-
-	bkt := gosc.client.Bucket(bucketName)
-	obj := bkt.Object(key)
-
-	// Write something to obj.
-	// w implements io.Writer.
-	w := obj.NewWriter(ctx)
-
-	// Write some text to obj. This will either create the object or overwrite whatever is there already.
-	if _, err := fmt.Fprintf(w, "%v", objectContent); err != nil {
-		return err
-	}
-
-	// Close, just like writing a file.
-	if err := w.Close(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Read performs a 'read' from bucket 'bucketName' on key 'key'. A passed Context could be used
-// to regenerate the client
-func (gosc *gcpObjectStorageCache) Read(ctx context.Context, bucketName string, key string) (interface{},error)  {
-	if ctx != nil {
-		gosc.client = getObjectStorageClient(ctx)
-	} else {
-		ctx = context.Background()
-	}
-
-	bkt := gosc.client.Bucket(bucketName)
-	obj := bkt.Object(key)
-
-	//TODO: should list the bucket first, see:
-	// https://godoc.org/cloud.google.com/go/storage
-	r, err := obj.NewReader(ctx)
-	if err != nil {
-		return "", fmt.Errorf("getting object error %v", err)
-	}
-
-	defer r.Close()
-
-	buf := new(strings.Builder)
-
-	if _, copyErr := io.Copy(buf, r); copyErr != nil {
-		return "", fmt.Errorf("error copying to stdout %v", copyErr)
-	}
-
-	keyString := buf.String()
-	fmt.Printf("Found value %s\n", keyString)
-	return keyString, nil
-}
 
 // ServiceAccountClient allows management of service account keys (create, list) for given service account emails
 type ServiceAccountClient interface {
 	KeyForServiceAccount(saEmail string, recreateKey bool) (string, error)
+	KeyFileForServiceAccount(saEmail string, recreateKey bool, filePath string) error
 	CreateKey(serviceAccountEmail string)
 	ListKeys(serviceAccountEmail string) ([]string, error)
 }
 
 type serviceAccountClient struct {
-	gcpIamClient       IamClient
+	gcpIamClient       IamGcpClient
 	objectStorageCache ObjectStorageCache
 }
 
 // NewServiceAccountClient creates a new GCP client for service account key management
-func NewServiceAccountClient(iamClient IamClient, objectStorageCache ObjectStorageCache) *serviceAccountClient {
+func NewServiceAccountClient(iamClient IamGcpClient, objectStorageCache ObjectStorageCache) *serviceAccountClient {
 	return &serviceAccountClient{gcpIamClient: iamClient, objectStorageCache: objectStorageCache}
 }
 
@@ -175,18 +34,17 @@ func NewDefaultServiceAccountClient() *serviceAccountClient {
 }
 
 // CreateKey creates a service account key for the given service account email
-func (sac *serviceAccountClient) CreateKey(serviceAccountEmail string) (string, error) {
+func (sac *serviceAccountClient) CreateKey(serviceAccountEmail string) (string, string, error) {
 	request := &iam.CreateServiceAccountKeyRequest{}
 	resource := fmt.Sprintf("projects/-/serviceAccounts/%s", serviceAccountEmail)
-	fmt.Printf("Creating key\n")
+	fmt.Printf("Creating key...\n")
 	key, err :=  sac.gcpIamClient.CreateKey(request, resource)
 
 	if err != nil {
-		return "", fmt.Errorf("Projects.ServiceAccounts.Keys.Create: %v", err)
+		return "", "", fmt.Errorf("Projects.ServiceAccounts.Keys.Create: %v", err)
 	}
-	_, _ = fmt.Fprintf(os.Stdout, "Created key: %v", key.Name)
-	fmt.Printf("Created the key %v\n", key)
-	return key.PrivateKeyData, nil
+	_, _ = fmt.Fprintf(os.Stdout, "Created key: %v\n", key.Name)
+	return key.PrivateKeyData, key.Name, nil
 }
 
 func (sac *serviceAccountClient) ListKeys(serviceAccountEmail string) ([]string, error) {
@@ -197,55 +55,91 @@ func (sac *serviceAccountClient) ListKeys(serviceAccountEmail string) ([]string,
 		return nil, fmt.Errorf("Projects.ServiceAccounts.Keys.List: %v", err)
 	}
 
-	res := make([]string,0)
+	var keyIds []string
 	for _, key := range response.Keys {
-		res = append(res, key.PrivateKeyData)
+		keyName := key.Name
+		keyId := extractKeyId(keyName)
+		keyIds = append(keyIds, keyId)
 	}
 
-	return res, nil
+	return keyIds, nil
 }
 
 // KeyForServiceAccount given a service account email address, it creates or recreates a JSON key for it which is
-// returned as a string
+// returned back as a string
 func (sac *serviceAccountClient) KeyForServiceAccount(saEmail string, recreateKey bool) (string, error) {
-	keys, _ := sac.ListKeys(saEmail)
-	var jsonKey string
+	keyIds, _ := sac.ListKeys(saEmail)
+	keyJsonFile := saEmail + ".json"
 
-	if len(keys) > 0 && !recreateKey {
-		fmt.Printf("Using existing key for SA: %s\n", saEmail)
-		keyString, err := sac.objectStorageCache.Read(nil, keysCacheBucketName, saEmail+".json")
-		if err != nil {
-			return "", fmt.Errorf("err finding key %v", err)
-		}
-		jsonKey = keyString.(string)
-	} else {
-		newKey, err := sac.CreateKey(saEmail)
-		if err != nil {
-			fmt.Printf("Error creating key %v", err)
-			return "", err
-		}
+	if len(keyIds) > 0 && !recreateKey {
+		// Even though keys may exist already for the service account, they cannot be returned if they aren't cached
+		// at the time they have been created
+		fmt.Printf("Attempt to find existing key for SA: %s\n", saEmail)
 
-		jsonKeyString := util.Base64Decode(newKey)
-
-		fmt.Println("----- BEGIN Service account JSON key -------")
-		fmt.Println(jsonKeyString)
-		fmt.Println("----- END Service account JSON key ---------")
-
-		writeErr := sac.objectStorageCache.Write(nil, keysCacheBucketName, saEmail+".json", jsonKeyString)
-		if writeErr != nil {
-			return "", fmt.Errorf("error writing key to storage %v", writeErr)
+		for _, keyId := range keyIds {
+			fmt.Printf("Checking if keyId %s has been cached\n", keyId)
+			cachedKeyJsonFile := addKeyIdToJsonFile(keyJsonFile, keyId)
+			keyString, err := sac.objectStorageCache.Read(nil, KeysCacheBucketName, cachedKeyJsonFile)
+			if err == nil {
+				fmt.Printf("Returning key for SA: %s from cache\n", saEmail)
+				return keyString.(string), nil
+			}
 		}
 
-		jsonKey = jsonKeyString
+		fmt.Printf("Could not find cached key for SA: %s -- Creating new one\n", saEmail)
 	}
 
-	return jsonKey, nil
+	return sac.createAndCacheKey(saEmail, keyJsonFile)
 }
 
-func getObjectStorageClient(ctx context.Context) ObjectStorageClient {
-	client, err := storage.NewClient(ctx)
+// KeyFileForServiceAccount same as 'KeyForServiceAccount' but returns the key written to 'filePath' destination
+func (sac *serviceAccountClient) KeyFileForServiceAccount(saEmail string, recreateKey bool, filePath string) error {
+	jsonKey, err := sac.KeyForServiceAccount(saEmail, recreateKey)
+
 	if err != nil {
-		panic(err)
+		fmt.Printf("Error generating Key for SA %s %v", saEmail, err)
+		return err
 	}
-	return client
+
+	writeErr := util.WriteStringToFile(jsonKey, filePath)
+
+	if writeErr != nil {
+		fmt.Printf("Error writing Key to file %v\n", writeErr)
+		return writeErr
+	}
+
+	return nil
+}
+
+func (sac *serviceAccountClient) createAndCacheKey(saEmail string, keyJsonFile string) (string, error) {
+	keyData, keyName, err := sac.CreateKey(saEmail)
+	if err != nil {
+		fmt.Printf("Error creating key %v\n", err)
+		return "", err
+	}
+
+	jsonKeyString := util.Base64Decode(keyData)
+
+	fmt.Println("----- BEGIN Service account JSON key -------")
+	fmt.Println(jsonKeyString)
+	fmt.Println("----- END Service account JSON key ---------")
+	keyId := extractKeyId(keyName)
+	keyJsonFile = addKeyIdToJsonFile(keyJsonFile, keyId)
+	fmt.Printf("writing with cache key: %s\n", keyJsonFile)
+	writeErr := sac.objectStorageCache.Write(nil, KeysCacheBucketName, keyJsonFile, jsonKeyString)
+	if writeErr != nil {
+		return "", fmt.Errorf("error caching key %v", writeErr)
+	}
+	return jsonKeyString, nil
+}
+
+func extractKeyId(keyName string) string {
+	idx := strings.LastIndex(keyName, "/")
+	keyId := keyName[idx+1:]
+	fmt.Printf("KeyName: %s -> KeyId %s\n", keyName, keyId)
+	return keyId
+}
+
+func addKeyIdToJsonFile(keyJsonFile string, keyId string)  string {
+	return strings.Replace(keyJsonFile, ".json", "-" + keyId + ".json", -1)
 }

@@ -26,6 +26,22 @@ func Parse(jsonString string) map[string]interface{} {
 	return jsonMap
 }
 
+func ParseArray(jsonString string) []map[string]interface{} {
+	var objmap []map[string]*json.RawMessage
+	data := []byte(jsonString)
+
+	err := json.Unmarshal(data, &objmap)
+
+	if err != nil {
+		log.Fatalf("Error unmarshalling json: %v", err)
+	}
+
+	jsonMap := make([]map[string]interface{},0)
+	err = json.Unmarshal(data, &jsonMap)
+
+	return jsonMap
+}
+
 func GetJsonObject(jsonMap interface{}, key string) interface{} {
 	return jsonMap.(map[string]interface{})[key].(interface{})
 }
