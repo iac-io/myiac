@@ -7,10 +7,13 @@ Infrastructure as code. GCP for now.
 * Create a GCP service account with admin privileges from here: https://cloud.google.com/iam/docs/creating-managing-service-accounts#iam-service-accounts-create-console
 * Download the json file and store in your user directory (`$HOME/account.json`)
 * Install Go [here](https://golang.org/dl/), it should be Go `v1.13` at least
-* Clone the project inside the `$GOPATH/src/github.com/dfernandezm/myiac`
-* If deployments aren going to be run required, export the environment variable `CHARTS_PATH` pointing to a folder that contains Helm Charts. This folder should follow the structure `charts/{appName}`. Inside, the typical structure for a Helm chart should be present (templates, values.yaml...)
+* Clone the project
+* If deployments are going to be run, export the environment variable `CHARTS_PATH` pointing to a folder that contains Helm Charts. This folder should follow the structure `charts/{appName}`. Inside, the typical structure for a Helm chart should be present (templates, values.yaml...)
+```
+export CHARTS_PATH=/path/to/charts
+```
 
-## Go build executable
+## Build executable
 
 ```
 $ go build cmd/myiac/myiac.go
