@@ -31,7 +31,7 @@ func setupEnvironmentCmd(projectFlag *cli.StringFlag, keyPath *cli.StringFlag) c
 
 			// read these values from config based on project and provider
 			zone := "europe-west1-b"
-			clusterName := "moneycol-dev"
+			clusterName := "placeholder"
 
 			setupProvider(providerValue, zone, clusterName, project, keyLocation)
 

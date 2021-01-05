@@ -8,6 +8,7 @@ import (
 	"github.com/dfernandezm/myiac/internal/encryption"
 	"github.com/dfernandezm/myiac/internal/gcp"
 	props "github.com/dfernandezm/myiac/internal/properties"
+	"github.com/dfernandezm/myiac/internal/util"
 	"github.com/urfave/cli"
 	"log"
 	"os"
@@ -30,13 +31,14 @@ func BuildCli() {
 	environmentFlag := &cli.StringFlag{Name: "env, e", Usage: "The environment to refer to (dev,prod)"}
 	projectFlag := &cli.StringFlag{Name: "project, p", Usage: "The project to refer to (projects folder manifests)"}
 	propertiesFlag := &cli.StringFlag{Name: "properties", Usage: "Properties for deployments"}
+	executionFlag := &cli.BoolFlag{Name: "noop, dry-run", Usage: "Dry Run"}
 
 	keyPath := &cli.StringFlag{Name: "keyPath", Usage: "SA key path"}
 	setupEnvironment := setupEnvironmentCmd(projectFlag, keyPath)
 	dockerSetup := dockerSetupCmd(projectFlag, environmentFlag)
 	dockerBuild := dockerBuildCmd(projectFlag)
 
-	createClusterCmd := createClusterCmd(projectFlag, environmentFlag)
+	createClusterCmd := createClusterCmd(projectFlag, environmentFlag, executionFlag)
 	installHelmCmd := installHelmCmd(projectFlag, environmentFlag)
 	destroyClusterCmd := destroyClusterCmd(projectFlag, environmentFlag)
 
@@ -261,29 +263,40 @@ func deployAppSetup(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag
 	}
 }
 
-func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag) cli.Command {
+func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag,
+	executionFlag *cli.BoolFlag) cli.Command {
 	return cli.Command{
 		Name:  "createCluster",
 		Usage: "Create a Kubernetes cluster through Terraform",
 		Flags: []cli.Flag{
 			projectFlag,
 			environmentFlag,
+			executionFlag,
 		},
 		Action: func(c *cli.Context) error {
 			fmt.Printf("Validating flags for createCluster\n")
 			validateBaseFlags(c)
-			fmt.Printf("destroyCluster running with flags\n")
+			fmt.Printf("createCluster running with flags\n")
 
 			project := c.String("project")
 			env := c.String("env")
+			execflag := c.Bool("noop")
 
 			//TODO: read from project manifest
 			zone := "europe-west1-b"
-			gcp.SetupEnvironment(project)
+			keyLocation := util.GetHomeDir() + fmt.Sprintf("/%s_account.json", project)
+			flag := &cli.StringFlag{
+				Name:  project,
+				Value: project,
+			}
+			key := &cli.StringFlag{FilePath: keyLocation}
+			setupEnvironmentCmd(flag, key)
+			//setupProvider('gcp', zone, project,project, util.GetHomeDir() + fmt.Sprintf("/%s_account.json", projectId))
+			//gcp.SetupEnvironment(project)
 	
 
 			//TODO: pass-in variables
-			cluster.CreateCluster(project, env, zone)
+			cluster.CreateCluster(project, env, zone, execflag)
 			return nil
 		},
 	}
@@ -309,9 +322,9 @@ func destroyClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringF
 
 			//TODO: read from project manifest
 			zone := "europe-west1-b"
-			gcp.SetupKubernetes(project, zone, env)
+			//gcp.SetupKubernetes(project, zone, env)
 
-			cluster.DestroyCluster()
+			cluster.DestroyCluster(project, env, zone)
 			return nil
 		},
 	}
@@ -337,7 +350,8 @@ func installHelmCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag
 			zone := "europe-west1-b"
 			gcp.SetupKubernetes(project, zone, env)
 
-			cluster.InstallHelm()
+			//TODO: Need to botsrap this be full blown go solution. Disabling for now.
+			//cluster.InstallHelm()
 
 			return nil
 		},
