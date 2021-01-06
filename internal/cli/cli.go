@@ -40,7 +40,7 @@ func BuildCli() {
 
 	createClusterCmd := createClusterCmd(projectFlag, environmentFlag, executionFlag, providerFlag, keyPath)
 	installHelmCmd := installHelmCmd(projectFlag, environmentFlag)
-	destroyClusterCmd := destroyClusterCmd(projectFlag, environmentFlag)
+	destroyClusterCmd := destroyClusterCmd(projectFlag, environmentFlag, providerFlag, keyPath)
 
 	deployApp := deployAppSetup(projectFlag, environmentFlag, propertiesFlag)
 	resizeClusterCmd := resizeClusterCmd(projectFlag, environmentFlag)
@@ -287,43 +287,61 @@ func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFl
 			env := c.String("env")
 			execflag := c.Bool("dry-run")
 			provider := c.String("provider")
-			keyPath := c.String("keyPath")
+			key := c.String("keyPath")
 
 			//TODO: read from project manifest
 			zone := "europe-west2-b"
 			if provider == "gcp" {
 				//Setup ENV Variable with the json credentials
-				gcp.SetKeyEnvVar(keyPath)
+				gcp.SetKeyEnvVar(key)
+			}
+			//TODO: pass-in variables
+			err := cluster.CreateCluster(project, env, zone, execflag)
+			if err != nil {
+				log.Fatalf("Could not create cluster in project: %v. Error: %v", project, err)
+			} else {
+				// Set local env kube for local connectivity to new cluster
+				log.Printf("Setting kubectl to work with new cluster: %v", project+"-"+env)
+				SetupProvider(provider, zone, project+"-"+env, project, key)
 			}
 
-			//TODO: pass-in variables
-			cluster.CreateCluster(project, env, zone, execflag)
 			return nil
+
+
 		},
 	}
 }
 
-func destroyClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag) cli.Command {
+func destroyClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag, providerFlag *cli.StringFlag, keyPath *cli.StringFlag) cli.Command {
 	return cli.Command{
 		Name:  "destroyCluster",
 		Usage: "Destroy an existing Kubernetes cluster created previously through Terraform",
 		Flags: []cli.Flag{
 			projectFlag,
 			environmentFlag,
+			providerFlag,
+			keyPath,
 		},
 		Action: func(c *cli.Context) error {
 			fmt.Printf("Validating flags for destroyCluster\n")
-			validateBaseFlags(c)
+			_ = validateBaseFlags(c)
+			_ = validateStringFlagPresence("provider", c)
+			_ = validateStringFlagPresence("env", c)
+			_ = validateStringFlagPresence("keyPath", c)
 			fmt.Printf("destroyCluster running with flags\n")
 
 			project := c.String("project")
-			gcp.SetupEnvironment(project)
-
 			env := c.String("env")
+			provider := c.String("provider")
+			keyPath := c.String("keyPath")
 
 			//TODO: read from project manifest
-			zone := "europe-west1-b"
-			//gcp.SetupKubernetes(project, zone, env)
+			zone := "europe-west2-b"
+
+			if provider == "gcp" {
+				//Setup ENV Variable with the json credentials
+				gcp.SetKeyEnvVar(keyPath)
+			}
 
 			cluster.DestroyCluster(project, env, zone)
 			return nil

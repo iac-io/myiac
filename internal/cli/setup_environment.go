@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"github.com/urfave/cli"
+	"log"
 )
 
 func setupEnvironmentCmd(providerFlag *cli.StringFlag, projectFlag *cli.StringFlag,
@@ -46,4 +47,5 @@ func setupProvider(providerValue string, zone string, clusterName string, projec
 
 	provider.Setup()
 	provider.ClusterSetup()
+	log.Printf("Set local kubectl to project: %v \n", project)
 }

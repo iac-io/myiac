@@ -5,6 +5,7 @@ import (
 	"github.com/iac-io/myiac/internal/commandline"
 	"github.com/iac-io/myiac/internal/preferences"
 	"github.com/iac-io/myiac/internal/util"
+	"log"
 	"regexp"
 	"strings"
 )
@@ -131,4 +132,18 @@ func validateKeyLocation(keyLocation string) {
 		err := fmt.Errorf("key path is invalid %s\n", keyLocation)
 		panic(err)
 	}
+}
+
+func SetupProvider(providerValue string, zone string, clusterName string, project string, keyLocation string) {
+	var provider Provider
+	if providerValue == "gcp" {
+		gkeCluster := GkeCluster{zone: zone, name: clusterName}
+		provider = NewGcpProvider(project, keyLocation, gkeCluster)
+	} else {
+		panic(fmt.Errorf("invalid provider provided: %v", providerValue))
+	}
+
+	provider.Setup()
+	provider.ClusterSetup()
+	log.Printf("Set local kubectl to project: %v \n", project)
 }
