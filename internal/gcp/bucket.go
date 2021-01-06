@@ -8,9 +8,11 @@ import (
 	"log"
 )
 
+const tfstate = "-tfstate-"
+
 func CreateGCSBucket(projectID string, e string) error {
 	// Setup context, client and bucket name
-	bucketName := projectID + "-tfstate-" + e
+	bucketName := projectID + tfstate + e
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
@@ -49,7 +51,7 @@ func CreateGCSBucket(projectID string, e string) error {
 
 func DeleteGCSBucket(projectID string, e string) error {
 	// Setup context, client and bucket name
-	bucketName := projectID + "-tfstate-" + e
+	bucketName := projectID + tfstate + e
 	fmt.Printf("Deleting Bucket: %v\n", bucketName)
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
