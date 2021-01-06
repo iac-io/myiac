@@ -3,9 +3,10 @@ package gcp
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/dfernandezm/myiac/internal/commandline"
-	"github.com/dfernandezm/myiac/internal/util"
+	"github.com/iac-io/myiac/internal/commandline"
+	"github.com/iac-io/myiac/internal/util"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -101,4 +102,13 @@ func ResizeCluster(project string, zone string, environment string, targetSize i
 		fmt.Printf("Node Pool %s resized", nodePoolName)	
 	}
 	fmt.Println("Cluster resized")
+}
+
+// Set OS Environment Variable so the key file is available gor gcloud cli
+func SetKeyEnvVar(k string) {
+	err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", k)
+	if err != nil {
+		fmt.Printf("GCP: Could not setup Environment Variable. Error: %v", err)
+		os.Exit(1)
+	}
 }

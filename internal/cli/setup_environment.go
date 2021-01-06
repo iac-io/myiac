@@ -3,14 +3,11 @@ package cli
 import (
 	"fmt"
 	"github.com/urfave/cli"
+	"log"
 )
 
-func setupEnvironmentCmd(projectFlag *cli.StringFlag, keyPath *cli.StringFlag) cli.Command {
-
-	providerFlag := &cli.StringFlag{
-		Name: "provider",
-		Usage: "Cloud Provider (gcp only for now)",
-	}
+func setupEnvironmentCmd(providerFlag *cli.StringFlag, projectFlag *cli.StringFlag,
+	keyPath *cli.StringFlag) cli.Command {
 
 	return cli.Command{
 		Name:  "setupEnvironment",
@@ -30,9 +27,8 @@ func setupEnvironmentCmd(projectFlag *cli.StringFlag, keyPath *cli.StringFlag) c
 			keyLocation := c.String("keyPath")
 
 			// read these values from config based on project and provider
-			zone := "europe-west1-b"
-			clusterName := "moneycol-dev"
-
+			zone := "europe-west2-b"
+			clusterName := "placeholder"
 			setupProvider(providerValue, zone, clusterName, project, keyLocation)
 
 			return nil
@@ -51,4 +47,5 @@ func setupProvider(providerValue string, zone string, clusterName string, projec
 
 	provider.Setup()
 	provider.ClusterSetup()
+	log.Printf("Set local kubectl to project: %v \n", project)
 }

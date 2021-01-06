@@ -2,8 +2,8 @@ package cli
 
 import (
 	"fmt"
-	"github.com/dfernandezm/myiac/internal/secret"
-	"github.com/dfernandezm/myiac/internal/ssl"
+	"github.com/iac-io/myiac/internal/secret"
+	"github.com/iac-io/myiac/internal/ssl"
 	"github.com/urfave/cli"
 	"log"
 )

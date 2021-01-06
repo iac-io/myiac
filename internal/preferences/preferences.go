@@ -2,7 +2,7 @@ package preferences
 
 import (
 	"fmt"
-	"github.com/dfernandezm/myiac/internal/util"
+	"github.com/iac-io/myiac/internal/util"
 	"gopkg.in/ini.v1"
 	"log"
 	"os"

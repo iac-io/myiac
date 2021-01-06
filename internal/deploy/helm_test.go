@@ -2,7 +2,7 @@ package deploy
 
 import (
 	"encoding/json"
-	"github.com/dfernandezm/myiac/internal/commandline"
+	"github.com/iac-io/myiac/internal/commandline"
 	"testing"
 	//"github.com/stretchr/testify/assert"
 	//"github.com/stretchr/testify/require"

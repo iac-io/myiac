@@ -119,4 +119,7 @@ func FileExists(filePath string) bool {
 	return true
 }
 
-
+func GetGcpKeyFilePath(p string) string {
+	path := GetHomeDir() + fmt.Sprintf("/%s_account.json", p)
+	return path
+}

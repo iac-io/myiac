@@ -2,12 +2,12 @@ package cli
 
 import (
 	"fmt"
-	"github.com/dfernandezm/myiac/internal/cluster"
-	"github.com/dfernandezm/myiac/internal/deploy"
-	"github.com/dfernandezm/myiac/internal/docker"
-	"github.com/dfernandezm/myiac/internal/encryption"
-	"github.com/dfernandezm/myiac/internal/gcp"
-	props "github.com/dfernandezm/myiac/internal/properties"
+	"github.com/iac-io/myiac/internal/cluster"
+	"github.com/iac-io/myiac/internal/deploy"
+	"github.com/iac-io/myiac/internal/docker"
+	"github.com/iac-io/myiac/internal/encryption"
+	"github.com/iac-io/myiac/internal/gcp"
+	props "github.com/iac-io/myiac/internal/properties"
 	"github.com/urfave/cli"
 	"log"
 	"os"
@@ -30,15 +30,17 @@ func BuildCli() {
 	environmentFlag := &cli.StringFlag{Name: "env, e", Usage: "The environment to refer to (dev,prod)"}
 	projectFlag := &cli.StringFlag{Name: "project, p", Usage: "The project to refer to (projects folder manifests)"}
 	propertiesFlag := &cli.StringFlag{Name: "properties", Usage: "Properties for deployments"}
+	dryrRunFlag := &cli.BoolFlag{Name: "dry-run", Usage: "Dry Run"}
+	providerFlag := &cli.StringFlag{Name: "provider", Usage: "Select k8s provider (GCP only for now) "}
 
 	keyPath := &cli.StringFlag{Name: "keyPath", Usage: "SA key path"}
-	setupEnvironment := setupEnvironmentCmd(projectFlag, keyPath)
+	setupEnvironment := setupEnvironmentCmd(providerFlag, projectFlag, keyPath)
 	dockerSetup := dockerSetupCmd(projectFlag, environmentFlag)
 	dockerBuild := dockerBuildCmd(projectFlag)
 
-	createClusterCmd := createClusterCmd(projectFlag, environmentFlag)
+	createClusterCmd := createClusterCmd(projectFlag, environmentFlag, dryrRunFlag, providerFlag, keyPath)
 	installHelmCmd := installHelmCmd(projectFlag, environmentFlag)
-	destroyClusterCmd := destroyClusterCmd(projectFlag, environmentFlag)
+	destroyClusterCmd := destroyClusterCmd(projectFlag, environmentFlag, providerFlag, keyPath)
 
 	deployApp := deployAppSetup(projectFlag, environmentFlag, propertiesFlag)
 	resizeClusterCmd := resizeClusterCmd(projectFlag, environmentFlag)
@@ -261,57 +263,88 @@ func deployAppSetup(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag
 	}
 }
 
-func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag) cli.Command {
+func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag,
+	dryrRunFlag *cli.BoolFlag, providerFlag *cli.StringFlag, keyPath *cli.StringFlag) cli.Command {
 	return cli.Command{
 		Name:  "createCluster",
 		Usage: "Create a Kubernetes cluster through Terraform",
 		Flags: []cli.Flag{
 			projectFlag,
 			environmentFlag,
+			dryrRunFlag,
+			providerFlag,
+			keyPath,
 		},
 		Action: func(c *cli.Context) error {
 			fmt.Printf("Validating flags for createCluster\n")
-			validateBaseFlags(c)
-			fmt.Printf("destroyCluster running with flags\n")
+			_ = validateBaseFlags(c)
+			_ = validateStringFlagPresence("provider", c)
+			_ = validateStringFlagPresence("env", c)
+			_ = validateStringFlagPresence("keyPath", c)
+			fmt.Printf("createCluster running with flags\n")
 
 			project := c.String("project")
 			env := c.String("env")
+			dryrunflag := c.Bool("dry-run")
+			provider := c.String("provider")
+			key := c.String("keyPath")
 
 			//TODO: read from project manifest
-			zone := "europe-west1-b"
-			gcp.SetupEnvironment(project)
-	
-
+			zone := "europe-west2-b"
+			if provider == "gcp" {
+				//Setup ENV Variable with the json credentials
+				gcp.SetKeyEnvVar(key)
+			}
 			//TODO: pass-in variables
-			cluster.CreateCluster(project, env, zone)
+			err := cluster.CreateCluster(project, env, zone, dryrunflag)
+			if err != nil {
+				log.Fatalf("Could not create cluster in project: %v. Error: %v", project, err)
+			}
+			if !dryrunflag {
+				// Set local env kube for local connectivity to new cluster
+				log.Printf("Setting kubectl to work with new cluster: %v", project+"-"+env)
+				SetupProvider(provider, zone, project+"-"+env, project, key)
+			}
+
 			return nil
+
+
 		},
 	}
 }
 
-func destroyClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag) cli.Command {
+func destroyClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag, providerFlag *cli.StringFlag, keyPath *cli.StringFlag) cli.Command {
 	return cli.Command{
 		Name:  "destroyCluster",
 		Usage: "Destroy an existing Kubernetes cluster created previously through Terraform",
 		Flags: []cli.Flag{
 			projectFlag,
 			environmentFlag,
+			providerFlag,
+			keyPath,
 		},
 		Action: func(c *cli.Context) error {
 			fmt.Printf("Validating flags for destroyCluster\n")
-			validateBaseFlags(c)
+			_ = validateBaseFlags(c)
+			_ = validateStringFlagPresence("provider", c)
+			_ = validateStringFlagPresence("env", c)
+			_ = validateStringFlagPresence("keyPath", c)
 			fmt.Printf("destroyCluster running with flags\n")
 
 			project := c.String("project")
-			gcp.SetupEnvironment(project)
-
 			env := c.String("env")
+			provider := c.String("provider")
+			keyPath := c.String("keyPath")
 
 			//TODO: read from project manifest
-			zone := "europe-west1-b"
-			gcp.SetupKubernetes(project, zone, env)
+			zone := "europe-west2-b"
 
-			cluster.DestroyCluster()
+			if provider == "gcp" {
+				//Setup ENV Variable with the json credentials
+				gcp.SetKeyEnvVar(keyPath)
+			}
+
+			cluster.DestroyCluster(project, env, zone)
 			return nil
 		},
 	}
@@ -337,7 +370,8 @@ func installHelmCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag
 			zone := "europe-west1-b"
 			gcp.SetupKubernetes(project, zone, env)
 
-			cluster.InstallHelm()
+			//TODO: Need to botsrap this be full blown go solution. Disabling for now.
+			//cluster.InstallHelm()
 
 			return nil
 		},

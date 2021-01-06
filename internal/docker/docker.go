@@ -3,9 +3,9 @@ package docker
 import (
 	"fmt"
 
-	"github.com/dfernandezm/myiac/internal/commandline"
-	p "github.com/dfernandezm/myiac/internal/properties"
-	"github.com/dfernandezm/myiac/internal/util"
+	"github.com/iac-io/myiac/internal/commandline"
+	p "github.com/iac-io/myiac/internal/properties"
+	"github.com/iac-io/myiac/internal/util"
 )
 
 const TAG_CMD_PART = "tag"

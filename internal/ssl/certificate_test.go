@@ -1,10 +1,10 @@
 package ssl
 
 import (
-	"github.com/dfernandezm/myiac/internal/cluster"
-	"github.com/dfernandezm/myiac/internal/commandline"
-	"github.com/dfernandezm/myiac/internal/secret"
-	"github.com/dfernandezm/myiac/internal/util"
+	"github.com/iac-io/myiac/internal/cluster"
+	"github.com/iac-io/myiac/internal/commandline"
+	"github.com/iac-io/myiac/internal/secret"
+	"github.com/iac-io/myiac/internal/util"
 	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"

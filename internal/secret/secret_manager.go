@@ -1,8 +1,8 @@
 package secret
 
 import (
-	"github.com/dfernandezm/myiac/internal/cluster"
-	"github.com/dfernandezm/myiac/internal/commandline"
+	"github.com/iac-io/myiac/internal/cluster"
+	"github.com/iac-io/myiac/internal/commandline"
 	"os"
 )
 
