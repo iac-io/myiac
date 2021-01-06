@@ -30,7 +30,7 @@ func BuildCli() {
 	environmentFlag := &cli.StringFlag{Name: "env, e", Usage: "The environment to refer to (dev,prod)"}
 	projectFlag := &cli.StringFlag{Name: "project, p", Usage: "The project to refer to (projects folder manifests)"}
 	propertiesFlag := &cli.StringFlag{Name: "properties", Usage: "Properties for deployments"}
-	executionFlag := &cli.BoolFlag{Name: "dry-run", Usage: "Dry Run"}
+	dryrRunFlag := &cli.BoolFlag{Name: "dry-run", Usage: "Dry Run"}
 	providerFlag := &cli.StringFlag{Name: "provider", Usage: "Select k8s provider (GCP only for now) "}
 
 	keyPath := &cli.StringFlag{Name: "keyPath", Usage: "SA key path"}
@@ -38,7 +38,7 @@ func BuildCli() {
 	dockerSetup := dockerSetupCmd(projectFlag, environmentFlag)
 	dockerBuild := dockerBuildCmd(projectFlag)
 
-	createClusterCmd := createClusterCmd(projectFlag, environmentFlag, executionFlag, providerFlag, keyPath)
+	createClusterCmd := createClusterCmd(projectFlag, environmentFlag, dryrRunFlag, providerFlag, keyPath)
 	installHelmCmd := installHelmCmd(projectFlag, environmentFlag)
 	destroyClusterCmd := destroyClusterCmd(projectFlag, environmentFlag, providerFlag, keyPath)
 
@@ -264,14 +264,14 @@ func deployAppSetup(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag
 }
 
 func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag,
-	executionFlag *cli.BoolFlag, providerFlag *cli.StringFlag, keyPath *cli.StringFlag) cli.Command {
+	dryrRunFlag *cli.BoolFlag, providerFlag *cli.StringFlag, keyPath *cli.StringFlag) cli.Command {
 	return cli.Command{
 		Name:  "createCluster",
 		Usage: "Create a Kubernetes cluster through Terraform",
 		Flags: []cli.Flag{
 			projectFlag,
 			environmentFlag,
-			executionFlag,
+			dryrRunFlag,
 			providerFlag,
 			keyPath,
 		},
@@ -285,7 +285,7 @@ func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFl
 
 			project := c.String("project")
 			env := c.String("env")
-			execflag := c.Bool("dry-run")
+			dryrunflag := c.Bool("dry-run")
 			provider := c.String("provider")
 			key := c.String("keyPath")
 
@@ -296,10 +296,11 @@ func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFl
 				gcp.SetKeyEnvVar(key)
 			}
 			//TODO: pass-in variables
-			err := cluster.CreateCluster(project, env, zone, execflag)
+			err := cluster.CreateCluster(project, env, zone, dryrunflag)
 			if err != nil {
 				log.Fatalf("Could not create cluster in project: %v. Error: %v", project, err)
-			} else {
+			}
+			if !dryrunflag {
 				// Set local env kube for local connectivity to new cluster
 				log.Printf("Setting kubectl to work with new cluster: %v", project+"-"+env)
 				SetupProvider(provider, zone, project+"-"+env, project, key)
