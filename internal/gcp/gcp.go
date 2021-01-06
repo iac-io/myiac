@@ -6,6 +6,7 @@ import (
 	"github.com/iac-io/myiac/internal/commandline"
 	"github.com/iac-io/myiac/internal/util"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -101,4 +102,14 @@ func ResizeCluster(project string, zone string, environment string, targetSize i
 		fmt.Printf("Node Pool %s resized", nodePoolName)	
 	}
 	fmt.Println("Cluster resized")
+}
+
+// Set OS Environment Variable so the key file is available gor gcloud cli
+func SetKeyEnvVar(k string) error {
+	err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", k)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	return nil
 }

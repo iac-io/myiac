@@ -284,16 +284,12 @@ func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFl
 
 			//TODO: read from project manifest
 			zone := "europe-west1-b"
-			keyLocation := util.GetHomeDir() + fmt.Sprintf("/%s_account.json", project)
 			flag := &cli.StringFlag{
 				Name:  project,
 				Value: project,
 			}
-			key := &cli.StringFlag{FilePath: keyLocation}
+			key := &cli.StringFlag{FilePath: util.GetGcpKeyFilePath(project)}
 			setupEnvironmentCmd(flag, key)
-			//setupProvider('gcp', zone, project,project, util.GetHomeDir() + fmt.Sprintf("/%s_account.json", projectId))
-			//gcp.SetupEnvironment(project)
-	
 
 			//TODO: pass-in variables
 			cluster.CreateCluster(project, env, zone, execflag)
