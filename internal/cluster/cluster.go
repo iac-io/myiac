@@ -8,7 +8,7 @@ import (
 	"log"
 	"os"
 	"time"
-	)
+)
 
 var (
 	tfvarsPath = util.CurrentExecutableDir() + "/internal/terraform/cluster"
@@ -42,7 +42,7 @@ func InitTerraform(tf string, project string, env string) {
 	}
 }
 
-func PlanTerraform(tp string, tf string)  {
+func PlanTerraform(tp string, tf string) {
 	argsArray := util.StringTemplateToArgsArray("%s %s", "plan", "-var-file="+tf)
 	cmd := commandline.NewWithWorkingDir("terraform", argsArray, tp)
 	cmd.Run()
@@ -55,37 +55,33 @@ func ApplyTerraform(tp string, tf string)  {
 }
 
 //TODO: pass variables into the TF template/clustervars
-func CreateCluster(project string, env string, zone string, flag bool) {
+func CreateCluster(project string, env string, zone string, flag bool) error {
 	InitTerraform(tfvarsPath, project, env)
 	if flag {
-		fmt.Println("Running Plan only due to --noop option")
+		log.Println("Running Plan only due to --dry-run option")
 		PlanTerraform(tfvarsPath,tfvarsFile)
-		os.Exit(0)
 	} else {
 		ApplyTerraform(tfvarsPath,tfvarsFile)
 	}
 
-	fmt.Printf("Kubernetes cluster created through Terraform from %s\n", tfvarsPath)
-
-	fmt.Println("Installing Helm into newly created cluster...")
-
-	fmt.Println("Waiting 10 seconds for cluster to stabilize before installing Helm")
+	log.Printf("Kubernetes cluster created through Terraform from %s\n", tfvarsPath)
+	log.Println("Waiting 10 seconds for cluster to stabilize before taking next steps\n")
 	time.Sleep(10 * time.Second)
 
-	fmt.Println("Setting up newly created Kubernetes cluster")
-	//gcp.SetupKubernetes(project, env, zone)
-
-	InstallHelm()
+	//TODO: Helm Needs fixing
+	//fmt.Println("Installing Helm into newly created cluster...")
+	//InstallHelm()
+	return nil
 }
 
 func DestroyCluster(project string, env string, zone string) {
 	InitTerraform(tfvarsPath, project, env)
-	fmt.Println("Waiting 5 seconds before destroying cluster...")
+	log.Println("Waiting 5 seconds before destroying cluster...")
 	time.Sleep(5 * time.Second)
 	argsArray := util.StringTemplateToArgsArray("%s %s %s", "destroy", "-var-file="+tfvarsFile, "-auto-approve")
 	cmd := commandline.NewWithWorkingDir("terraform", argsArray, tfvarsPath)
 	cmd.Run()
-	fmt.Println("Kubernetes cluster deleted through Terraform")
+	log.Println("Kubernetes cluster deleted through Terraform")
 	//TODO: Need to have option (flag) to be able to delete bucket after cluster is destroyed
 	//Code below is ready but GCS cannot remove not empty buckets
 	//err := gcp.DeleteGCSBucket(project, env)
