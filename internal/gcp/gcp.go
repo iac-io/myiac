@@ -105,11 +105,10 @@ func ResizeCluster(project string, zone string, environment string, targetSize i
 }
 
 // Set OS Environment Variable so the key file is available gor gcloud cli
-func SetKeyEnvVar(k string) error {
+func SetKeyEnvVar(k string) {
 	err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", k)
 	if err != nil {
-		fmt.Println(err)
-		return err
+		fmt.Printf("GCP: Could not setup Environment Variable. Error: %v", err)
+		os.Exit(1)
 	}
-	return nil
 }
