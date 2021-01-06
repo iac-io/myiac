@@ -6,11 +6,8 @@ locals {
   network_cidr            = "10.254.0.0/16"
 
   cluster_name            = "${var.project}-${var.environment}"
-#  cluster_state_bucket    = "${var.project}-tf-state-${var.environment}"
-#  state_bucket_prefix     = "terraform/state/cluster"
   applications_pool_name  = "${var.project}-${var.environment}-applications-pool"
   elasticsearch_pool_name = "${var.project}-${var.environment}-elasticsearch-pool"
-#  credentialsFile         = "/Users/przemek/ozzy-playground_account.json"
 }
 
 provider "google" {
@@ -18,7 +15,6 @@ provider "google" {
   region      = var.cluster_zone
 }
 
-# gsutil versioning set on gs://moneycol-tf-state-dev
 terraform {
   backend "gcs" {
     bucket = "ozzy-playground-tfstate-dev"
@@ -34,27 +30,26 @@ data "terraform_remote_state" "state" {
   }
 }
 
-# terraform init \ 
-#      -backend-config "bucket=$TF_VAR_bucket" \  
-
 resource "google_container_cluster" "cluster" {
   name     = local.cluster_name
   project  = var.project
   location = var.cluster_zone
   network  = google_compute_network.gke_network.self_link
   subnetwork = google_compute_subnetwork.gke_subnet.self_link
+  min_master_version = "1.17.14-gke.1600"
+  node_version = "1.17.14-gke.1600"
 
   remove_default_node_pool = true
+  logging_service          = "logging.googleapis.com/kubernetes"
+  monitoring_service       = "monitoring.googleapis.com/kubernetes"
   initial_node_count       = 1
-  logging_service          = "none"
-  monitoring_service       = "none"
 
   master_auth {
     username = ""
     password = ""
 
     client_certificate_config {
-      issue_client_certificate = false
+      issue_client_certificate = true
     }
   }
 }
@@ -65,7 +60,7 @@ resource "google_container_node_pool" "applications_node_pool" {
   name               = local.applications_pool_name
   location           = google_container_cluster.cluster.location
   cluster            = google_container_cluster.cluster.name
-  initial_node_count = 1
+  initial_node_count = 2
 
   autoscaling {
     # Minimum number of nodes in the NodePool. Must be >=0 and <= max_node_count.
@@ -139,7 +134,7 @@ resource "google_compute_subnetwork" "gke_subnet" {
   project       = var.project
   name          = "${var.project}-${var.environment}-gke-subnet"
   ip_cidr_range = local.network_cidr
-  region        = "europe-west1"
+  region        = "europe-west2"
   network       = google_compute_network.gke_network.self_link
 }
 
