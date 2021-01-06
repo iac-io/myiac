@@ -6,7 +6,7 @@ steps:
 
 - id: go_build
   name: golang
-  args: ['go', 'build', '-o', 'myiac', 'github.com/dfernandezm/myiac/app']
+  args: ['go', 'build', '-o', 'myiac', 'github.com/iac-io/myiac/app']
   env: ['GO111MODULE=on']
 
 artifacts:

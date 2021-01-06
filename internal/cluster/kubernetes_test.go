@@ -2,7 +2,7 @@ package cluster
 
 import (
 	"fmt"
-	"github.com/dfernandezm/myiac/testutil"
+	"github.com/iac-io/myiac/testutil"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

@@ -53,5 +53,5 @@ The cluster needs to be created beforehand as the `createCluster` and `destroyCl
 
 ## Setting up SSL in traefik
 
-https://github.com/dfernandezm/myiac/blob/e0cbdde19ed9c4b8da750481e175e936c66d113c/kubernetes/cluster/README.md
+https://github.com/iac-io/myiac/blob/e0cbdde19ed9c4b8da750481e175e936c66d113c/kubernetes/cluster/README.md
 

@@ -1,7 +1,7 @@
 package testutil
 
 import (
-	"github.com/dfernandezm/myiac/internal/commandline"
+	"github.com/iac-io/myiac/internal/commandline"
 	"strings"
 )
 

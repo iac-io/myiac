@@ -1,6 +1,6 @@
 FROM golang:1.13-alpine as myiac-builder
 RUN apk add --no-cache git bash sudo curl
-WORKDIR /go/src/github.com/dfernandezm/myiac
+WORKDIR /go/src/github.com/iac-io/myiac
 COPY . .
 RUN go get -d -v ./...
 RUN go install -v ./...

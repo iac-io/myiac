@@ -9,4 +9,4 @@ rsync -a $CHARTS_LOCATION $GOPATH/bin/charts --exclude .git
 
 cp -R terraform $GOPATH/bin
 
-go build -o $GOPATH/bin/myiac github.com/dfernandezm/myiac/app
+go build -o $GOPATH/bin/myiac github.com/iac-io/myiac/app

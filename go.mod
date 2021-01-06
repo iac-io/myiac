@@ -1,4 +1,4 @@
-module github.com/dfernandezm/myiac
+module github.com/iac-io/myiac
 
 go 1.13
 

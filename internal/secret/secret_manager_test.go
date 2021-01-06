@@ -2,8 +2,8 @@ package secret
 
 import (
 	"fmt"
-	"github.com/dfernandezm/myiac/internal/cluster"
-	"github.com/dfernandezm/myiac/testutil"
+	"github.com/iac-io/myiac/internal/cluster"
+	"github.com/iac-io/myiac/testutil"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"

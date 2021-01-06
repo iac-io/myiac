@@ -2,9 +2,9 @@ package cli
 
 import (
 	"fmt"
-	"github.com/dfernandezm/myiac/internal/commandline"
-	"github.com/dfernandezm/myiac/internal/preferences"
-	"github.com/dfernandezm/myiac/internal/util"
+	"github.com/iac-io/myiac/internal/commandline"
+	"github.com/iac-io/myiac/internal/preferences"
+	"github.com/iac-io/myiac/internal/util"
 	"regexp"
 	"strings"
 )

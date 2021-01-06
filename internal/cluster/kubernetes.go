@@ -2,8 +2,8 @@ package cluster
 
 import (
 	"fmt"
-	"github.com/dfernandezm/myiac/internal/commandline"
-	"github.com/dfernandezm/myiac/internal/util"
+	"github.com/iac-io/myiac/internal/commandline"
+	"github.com/iac-io/myiac/internal/util"
 	"strings"
 )
 

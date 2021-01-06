@@ -1,14 +1,14 @@
 package main
 
 import (
-	"github.com/dfernandezm/myiac/internal/cli"
+	"github.com/iac-io/myiac/internal/cli"
 )
 
 const (
-	project              = "moneycol"
-	clusterZone          = "europe-west1-b"
+	project              = "myiac"
+	clusterZone          = "europe-west2-b"
 	environment          = "dev"
-	projectId            = "moneycol"
+	projectId            = "myiac"
 	projectRepositoryUrl = "eu.gcr.io"
 )
 
