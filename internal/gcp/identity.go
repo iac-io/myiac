@@ -1,12 +1,14 @@
 package gcp
+
 //TODO: move this into gcp package as subpackage?
 import (
-	"cloud.google.com/go/storage"
 	"context"
 	"fmt"
-	"google.golang.org/api/iam/v1"
 	"io"
 	"strings"
+
+	"cloud.google.com/go/storage"
+	"google.golang.org/api/iam/v1"
 )
 
 const KeysCacheBucketName = "moneycol-keys"
@@ -22,7 +24,7 @@ type IamGcpClient interface {
 // gcpIamClient private implementation of the above interface that actually wraps the operations
 type gcpIamClient struct {
 	iamService *iam.Service
-	ctx context.Context
+	ctx        context.Context
 }
 
 // NewGcpIamClient Creates a new IamClient with external provided context and *iam.Service
@@ -63,20 +65,20 @@ type ObjectStorageGcpClient interface {
 // Abstracts the operations needed from the GCP SDK
 type ObjectStorageCache interface {
 	Write(ctx context.Context, bucketName string, key string, content interface{}) error
-	Read(ctx context.Context, bucketName string, objectKey string) (interface{},error)
+	Read(ctx context.Context, bucketName string, objectKey string) (interface{}, error)
 }
 
 // gcpObjectStorageCache Implements 'ObjectStorageCache' and uses the interface
 // 'ObjectStorageClient' to perform the base operations
 type gcpObjectStorageCache struct {
 	client ObjectStorageGcpClient
-	ctx context.Context
+	ctx    context.Context
 }
 
 // NewGcpObjectStorageCache creates a GCP-based Object Storage cache, optionally
 // receiving a Context. It injects a ObjectStorageClient providing the base operations
 func NewGcpObjectStorageCache(ctx context.Context, client ObjectStorageGcpClient) *gcpObjectStorageCache {
-	return &gcpObjectStorageCache{client:client, ctx:ctx}
+	return &gcpObjectStorageCache{client: client, ctx: ctx}
 }
 
 // NewDefaultObjectStorageCache creates a GCP-based Object Storage cache using a
@@ -119,7 +121,7 @@ func (gosc *gcpObjectStorageCache) Write(ctx context.Context, bucketName string,
 
 // Read performs a 'read' from bucket 'bucketName' on key 'key'. A passed Context could be used
 // to regenerate the client
-func (gosc *gcpObjectStorageCache) Read(ctx context.Context, bucketName string, key string) (interface{},error)  {
+func (gosc *gcpObjectStorageCache) Read(ctx context.Context, bucketName string, key string) (interface{}, error) {
 	if ctx != nil {
 		gosc.client = getObjectStorageClient(ctx)
 	} else {
@@ -148,7 +150,6 @@ func (gosc *gcpObjectStorageCache) Read(ctx context.Context, bucketName string, 
 	fmt.Printf("Found value %s\n", keyString)
 	return keyString, nil
 }
-
 
 func getObjectStorageClient(ctx context.Context) ObjectStorageGcpClient {
 	client, err := storage.NewClient(ctx)

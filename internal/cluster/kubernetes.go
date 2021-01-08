@@ -2,9 +2,10 @@ package cluster
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/iac-io/myiac/internal/commandline"
 	"github.com/iac-io/myiac/internal/util"
-	"strings"
 )
 
 func GetInternalIpsForNodes() []string {
@@ -42,13 +43,13 @@ func getAllIps(json map[string]interface{}, internal bool) []string {
 	indexOfAddress := 1
 	if internal {
 		indexOfAddress = 0
-	} 
+	}
 	allNodes := util.GetJsonArray(json, "items")
 	var ips []string
 	for _, node := range allNodes {
 		status := util.GetJsonObject(node, "status")
 		addresses := util.GetJsonArray(status, "addresses")
-		ip := util.GetStringValue(addresses[indexOfAddress], "address") 
+		ip := util.GetStringValue(addresses[indexOfAddress], "address")
 		ips = append(ips, ip)
 	}
 	return ips
@@ -83,7 +84,7 @@ type kubernetesRunner struct {
 }
 
 func NewKubernetesRunner(commandRunner commandline.CommandRunner) *kubernetesRunner {
-	return &kubernetesRunner{cmdRunner:commandRunner}
+	return &kubernetesRunner{cmdRunner: commandRunner}
 }
 
 // CreateTlsSecret create a TLS based secret in Kubernetes, used to store SSL certificates from its cert and key files
@@ -117,7 +118,7 @@ func (kr kubernetesRunner) CreateFileSecret(name string, namespace string, jsonK
 }
 
 func (kr kubernetesRunner) FindSecret(name string, namespace string) string {
-	argsArray := []string{"get", "secret", name,"-n", namespace}
+	argsArray := []string{"get", "secret", name, "-n", namespace}
 	kr.cmdRunner.SetupWithoutOutput("kubectl", argsArray)
 	cmdOutput := kr.cmdRunner.Run()
 	return cmdOutput.Output
@@ -130,5 +131,3 @@ func deleteSecret(name string, namespace string) {
 	cmd.IgnoreError(true)
 	cmd.Run()
 }
-
-

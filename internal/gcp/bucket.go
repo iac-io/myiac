@@ -1,11 +1,12 @@
 package gcp
 
 import (
-	"cloud.google.com/go/storage"
 	"context"
 	"fmt"
-	"google.golang.org/api/iterator"
 	"log"
+
+	"cloud.google.com/go/storage"
+	"google.golang.org/api/iterator"
 )
 
 const tfstate = "-tfstate-"

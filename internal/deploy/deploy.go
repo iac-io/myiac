@@ -2,12 +2,13 @@ package deploy
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/iac-io/myiac/internal/cluster"
 	"github.com/iac-io/myiac/internal/commandline"
 	"github.com/iac-io/myiac/internal/gcp"
 	"github.com/iac-io/myiac/internal/util"
-	"os"
-	"strings"
 )
 
 type Deployment struct {
@@ -50,7 +51,7 @@ func changeDevDNS() {
 
 func applyDNSThroughSdk(newIP string) {
 	fmt.Printf("Applying changes to DNS for new IP: %s", newIP)
-	dnsService := gcp.NewGoogleCloudDNSService("moneycol","money-zone-free")
+	dnsService := gcp.NewGoogleCloudDNSService("moneycol", "money-zone-free")
 	dnsService.UpsertDNSRecord("A", "dev.moneycol.ml", newIP)
 }
 
@@ -66,10 +67,10 @@ func Deploy(appName string, environment string, propertiesMap map[string]string,
 	cmdRunner := commandline.NewEmpty()
 	helmDeployer := NewHelmDeployer(getBaseChartsPath(), cmdRunner)
 	deployment := HelmDeployment{
-		AppName:appName,
-		Environment: environment,
+		AppName:       appName,
+		Environment:   environment,
 		HelmSetParams: helmSetParams,
-		DryRun: dryRun,
+		DryRun:        dryRun,
 	}
 	helmDeployer.Deploy(&deployment)
 

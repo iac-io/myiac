@@ -15,6 +15,3 @@ const (
 func main() {
 	cli.BuildCli()
 }
-
-
-

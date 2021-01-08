@@ -3,11 +3,12 @@ package deploy
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/iac-io/myiac/internal/commandline"
-	"github.com/iac-io/myiac/internal/util"
 	"io/ioutil"
 	"log"
 	"strings"
+
+	"github.com/iac-io/myiac/internal/commandline"
+	"github.com/iac-io/myiac/internal/util"
 )
 
 //https://quii.gitbook.io/learn-go-with-tests/go-fundamentals/mocking
@@ -35,9 +36,9 @@ type helmDeployer struct {
 type HelmDeployment struct {
 	AppName          string
 	DryRun           bool
-	Environment 	 string
+	Environment      string
 	HelmSetParams    map[string]string // key value pairs
-	HelmValuesParams []string // yaml filenames to pass as --values
+	HelmValuesParams []string          // yaml filenames to pass as --values
 }
 
 func NewHelmDeployer(chartsPath string, commandRunner commandline.CommandRunner) *helmDeployer {
@@ -62,7 +63,7 @@ func (hd *helmDeployer) ReleaseFor(appName string) string {
 		appNameIsPartOfChart := strings.Contains(strings.ToLower(release.Chart), appName)
 		if appNameIsPartOfChart && release.Status == "DEPLOYED" {
 			// It exists with the given name
-			fmt.Printf("Release for app %s found. " +
+			fmt.Printf("Release for app %s found. "+
 				"Name: %s, Status %s, Chart: %s\n",
 				appName, release.Name, release.Status, release.Chart)
 			return release.Name
@@ -82,7 +83,7 @@ func (hd *helmDeployer) ListReleases() ReleasesList {
 	return listReleases
 }
 
-func (hd *helmDeployer) DeleteFailedReleases()  {
+func (hd *helmDeployer) DeleteFailedReleases() {
 	releasesList := hd.ListReleases()
 	for _, release := range releasesList.Releases {
 		if release.Status == "FAILED" {
@@ -103,7 +104,7 @@ func deleteHelmRelease(hd *helmDeployer, releaseName string) {
 
 func (hd *helmDeployer) ParseReleasesList(jsonString string) ReleasesList {
 	var listReleases ReleasesList
-	
+
 	// If there is no releases, a single space is returned
 	if jsonString == "" || len(strings.TrimSpace(jsonString)) == 0 {
 		// empty releases list

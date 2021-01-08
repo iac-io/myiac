@@ -1,15 +1,16 @@
 package testutil
 
 import (
-	"github.com/iac-io/myiac/internal/commandline"
 	"strings"
+
+	"github.com/iac-io/myiac/internal/commandline"
 )
 
 type fakeRunner struct {
-	cmd string
-	args []string
+	cmd      string
+	args     []string
 	CmdLines []string
-	output string
+	output   string
 }
 
 func (fk *fakeRunner) SetupWithoutOutput(cmd string, args []string) {

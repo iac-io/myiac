@@ -2,10 +2,11 @@ package preferences
 
 import (
 	"fmt"
-	"github.com/iac-io/myiac/internal/util"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+
+	"github.com/iac-io/myiac/internal/util"
+	"github.com/stretchr/testify/assert"
 )
 
 var prefsFilename = "/tmp/.myiac/testPrefs"

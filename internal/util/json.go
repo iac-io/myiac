@@ -36,7 +36,7 @@ func ParseArray(jsonString string) []map[string]interface{} {
 		log.Fatalf("Error unmarshalling json: %v", err)
 	}
 
-	jsonMap := make([]map[string]interface{},0)
+	jsonMap := make([]map[string]interface{}, 0)
 	err = json.Unmarshal(data, &jsonMap)
 
 	return jsonMap
@@ -59,7 +59,6 @@ func asString(value interface{}) string {
 	return value.(string)
 }
 
-
 func dumpMap(space string, m map[string]interface{}) {
 	for k, v := range m {
 		if mv, ok := v.(map[string]interface{}); ok {
@@ -71,4 +70,3 @@ func dumpMap(space string, m map[string]interface{}) {
 		}
 	}
 }
-

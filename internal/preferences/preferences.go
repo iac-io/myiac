@@ -2,11 +2,12 @@ package preferences
 
 import (
 	"fmt"
-	"github.com/iac-io/myiac/internal/util"
-	"gopkg.in/ini.v1"
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/iac-io/myiac/internal/util"
+	"gopkg.in/ini.v1"
 )
 
 const (
@@ -20,7 +21,7 @@ type Preferences interface {
 }
 
 type configPreferences struct {
-	fileName string
+	fileName       string
 	propertiesFile *ini.File
 }
 
@@ -79,6 +80,3 @@ func createPath(p string) (*os.File, error) {
 	}
 	return os.Create(p)
 }
-
-
-

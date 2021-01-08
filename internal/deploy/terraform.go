@@ -2,13 +2,14 @@ package deploy
 
 import (
 	"fmt"
+
 	"github.com/iac-io/myiac/internal/commandline"
 	"github.com/iac-io/myiac/internal/util"
 )
 
 func ApplyDnsIpChange(tfFileLocation string, ip string) {
 	// do no use single quotes here for the var (i.e. -var 'foo=bar') as it fails to execute
-	inlinedVar := fmt.Sprintf("-var dev_ip=%s",ip) 
+	inlinedVar := fmt.Sprintf("-var dev_ip=%s", ip)
 
 	argsArray := util.StringTemplateToArgsArray("%s %s", "plan", inlinedVar)
 	cmd := commandline.NewWithWorkingDir("terraform", argsArray, tfFileLocation)

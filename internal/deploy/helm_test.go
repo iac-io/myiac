@@ -2,8 +2,9 @@ package deploy
 
 import (
 	"encoding/json"
-	"github.com/iac-io/myiac/internal/commandline"
 	"testing"
+
+	"github.com/iac-io/myiac/internal/commandline"
 	//"github.com/stretchr/testify/assert"
 	//"github.com/stretchr/testify/require"
 )
@@ -69,7 +70,7 @@ func (mcr mockCommandRunner) Setup(executable string, args []string) {
 	mcr.arguments = args
 }
 
-func (mcr mockCommandRunner) SetupWithoutOutput(executable string, args []string)  {
+func (mcr mockCommandRunner) SetupWithoutOutput(executable string, args []string) {
 	mcr.executable = executable
 	mcr.arguments = args
 }
@@ -97,7 +98,7 @@ func TestReleaseDeployed(t *testing.T) {
 
 func TestReleaseHasFailed(t *testing.T) {
 	commandRunner := &mockCommandRunner{output: ""}
-	d := NewHelmDeployer("charts",commandRunner)
+	d := NewHelmDeployer("charts", commandRunner)
 
 	// Given: a release (2nd one) has failed status
 	releasesList := d.ParseReleasesList(ExistingReleasesOutput)

@@ -2,26 +2,27 @@ package cli
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/iac-io/myiac/internal/secret"
 	"github.com/iac-io/myiac/internal/ssl"
 	"github.com/urfave/cli"
-	"log"
 )
 
 func createCertCmd() cli.Command {
 
 	keyPathFlag := &cli.StringFlag{
-		Name: "keyPath, k",
+		Name:  "keyPath, k",
 		Usage: "Location of file with private key",
 	}
 
 	certPathFlag := &cli.StringFlag{
-		Name: "certPath, c",
+		Name:  "certPath, c",
 		Usage: "Cert path flag",
 	}
 
 	domainNameFlag := &cli.StringFlag{
-		Name: "domain, d",
+		Name:  "domain, d",
 		Usage: "Domain name",
 	}
 
@@ -60,5 +61,3 @@ func validateFlags(c *cli.Context) {
 	_ = validateStringFlagPresence("certPath", c)
 	_ = validateStringFlagPresence("domain", c)
 }
-
-
