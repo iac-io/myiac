@@ -2,17 +2,18 @@ package cli
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/iac-io/myiac/internal/cluster"
 	"github.com/iac-io/myiac/internal/gcp"
 	"github.com/iac-io/myiac/internal/secret"
 	"github.com/urfave/cli"
-	"strings"
 )
 
 func createSecretCmd() cli.Command {
 	secretNameFlag := &cli.StringFlag{Name: "secretName", Usage: "The name of the secret to be created in K8s"}
 	saEmailFlag := &cli.StringFlag{Name: "saEmail", Usage: "The service account email whose key will be associated to the secret"}
-	recreateKeyFlag :=  &cli.BoolFlag{Name: "recreateSaKey", Usage: "Whether or not it should recreate the SA key"}
+	recreateKeyFlag := &cli.BoolFlag{Name: "recreateSaKey", Usage: "Whether or not it should recreate the SA key"}
 	literalStringFlag := &cli.StringFlag{Name: "literal", Usage: "String to encode as secret, in plain text"}
 
 	return cli.Command{

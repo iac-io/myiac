@@ -2,9 +2,10 @@ package cluster
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/iac-io/myiac/testutil"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestCreateFileSecret(t *testing.T) {
@@ -20,8 +21,8 @@ func TestCreateFileSecret(t *testing.T) {
 	kubernetesRunner.CreateFileSecret(secretName, "default", filePath)
 
 	// then
-	expectedCreateSecretCmdLine := fmt.Sprintf("kubectl create secret generic %s " +
-			"--from-file=%s.json=%s -n default", secretName, secretName, filePath)
+	expectedCreateSecretCmdLine := fmt.Sprintf("kubectl create secret generic %s "+
+		"--from-file=%s.json=%s -n default", secretName, secretName, filePath)
 	actualCreateSecretCmdLine := cmdLine.CmdLines[0]
 
 	assert.Equal(t, expectedCreateSecretCmdLine, actualCreateSecretCmdLine)

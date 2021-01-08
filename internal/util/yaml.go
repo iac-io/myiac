@@ -2,9 +2,10 @@ package util
 
 import (
 	"fmt"
-	"log"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"log"
+
+	"gopkg.in/yaml.v2"
 )
 
 type ExternalIpList struct {
@@ -23,14 +24,14 @@ func WriteAsYaml(yamlFilePath string, values []string) string {
 }
 
 func writeFile(filePath string, contents string) {
-    data := []byte(contents)
-    err := ioutil.WriteFile(filePath, data, 0755)
+	data := []byte(contents)
+	err := ioutil.WriteFile(filePath, data, 0755)
 	check(err)
-	fmt.Printf("Wrote file %s with content:\n %s\n",filePath, contents)
+	fmt.Printf("Wrote file %s with content:\n %s\n", filePath, contents)
 }
 
 func check(e error) {
-    if e != nil {
-        panic(e)
-    }
+	if e != nil {
+		panic(e)
+	}
 }

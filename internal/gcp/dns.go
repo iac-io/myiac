@@ -2,10 +2,11 @@ package gcp
 
 import (
 	"fmt"
+
 	"github.com/rs/zerolog/log"
 	"golang.org/x/net/context"
-    "golang.org/x/oauth2/google"
-    "google.golang.org/api/dns/v1"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/dns/v1"
 )
 
 // GoogleCloudDNSService is the service that allows to create or update dns records

@@ -25,7 +25,7 @@ func LookupPathFor(executable string) (string, error) {
 }
 
 func CurrentExecutableDir() string {
-	
+
 	executable, err := os.Executable()
 	if err != nil {
 		log.Fatalf("Error getting the directory of this executable %s", err)
@@ -33,7 +33,7 @@ func CurrentExecutableDir() string {
 
 	location, err := filepath.Abs(filepath.Dir(executable))
 
-	if (err != nil) {
+	if err != nil {
 		log.Fatalf("Error getting the directory of this executable %s", err)
 	}
 
@@ -88,7 +88,7 @@ func WriteStringToFile(content string, filePath string) error {
 }
 
 func ArrayContains(array []string, value string) bool {
-	for _, val:= range array {
+	for _, val := range array {
 		if val == value {
 			return true
 		}

@@ -2,11 +2,12 @@ package secret
 
 import (
 	"fmt"
+	"os"
+	"testing"
+
 	"github.com/iac-io/myiac/internal/cluster"
 	"github.com/iac-io/myiac/testutil"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"testing"
 )
 
 func TestCreateSecret(t *testing.T) {
@@ -26,7 +27,7 @@ func TestCreateSecret(t *testing.T) {
 	// then
 	//TODO: should validate snake case
 	expectedCreateSecretCmdLine :=
-		fmt.Sprintf("kubectl create secret generic %s " +
+		fmt.Sprintf("kubectl create secret generic %s "+
 			"--from-file=%s.json=%s -n default", secretName, secretName, filePath)
 	actualCreateSecretCmdLine := cmdLine.CmdLines[0]
 

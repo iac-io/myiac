@@ -1,18 +1,19 @@
 package ssl
 
 import (
+	"strings"
+	"testing"
+
 	"github.com/iac-io/myiac/internal/cluster"
 	"github.com/iac-io/myiac/internal/commandline"
 	"github.com/iac-io/myiac/internal/secret"
 	"github.com/iac-io/myiac/internal/util"
 	"github.com/stretchr/testify/assert"
-	"strings"
-	"testing"
 )
 
 type fakeKubernetesRunner struct {
-	cmd string
-	args []string
+	cmd      string
+	args     []string
 	CmdLines []string
 }
 
@@ -43,7 +44,6 @@ func (fk fakeKubernetesRunner) IgnoreError(ignoreError bool) {
 func (fk fakeKubernetesRunner) SetupCmdLine(cmdLine string) {
 }
 
-
 func TestCreateTlsCertificate(t *testing.T) {
 	// setup
 	cmdLine := new(fakeKubernetesRunner)
@@ -72,4 +72,3 @@ func TestCreateTlsCertificate(t *testing.T) {
 	assert.Contains(t, createdSecretName, domain)
 	assert.Equal(t, expectedCreateSecretCmdLine, actualCreateSecretCmdLine)
 }
-

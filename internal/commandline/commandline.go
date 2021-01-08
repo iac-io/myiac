@@ -74,7 +74,7 @@ func (c *commandExec) Setup(executable string, arguments []string) {
 	c.arguments = arguments
 }
 
-func (c *commandExec) SetupWithoutOutput(executable string, arguments []string)  {
+func (c *commandExec) SetupWithoutOutput(executable string, arguments []string) {
 	c.executable = executable
 	c.arguments = arguments
 	c.IsSuppressOutput = true
@@ -108,7 +108,7 @@ func (c *commandExec) Run() CommandOutput {
 		c.saveOutput(output)
 	}
 
-	outputResult := CommandOutput{Output:c.commandOutput}
+	outputResult := CommandOutput{Output: c.commandOutput}
 
 	return outputResult
 }

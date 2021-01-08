@@ -2,12 +2,12 @@ package gcp
 
 import (
 	"fmt"
-	"github.com/iac-io/myiac/internal/util"
-	"google.golang.org/api/iam/v1"
 	"os"
 	"strings"
-)
 
+	"github.com/iac-io/myiac/internal/util"
+	"google.golang.org/api/iam/v1"
+)
 
 // ServiceAccountClient allows management of service account keys (create, list) for given service account emails
 type ServiceAccountClient interface {
@@ -38,7 +38,7 @@ func (sac *serviceAccountClient) CreateKey(serviceAccountEmail string) (string, 
 	request := &iam.CreateServiceAccountKeyRequest{}
 	resource := fmt.Sprintf("projects/-/serviceAccounts/%s", serviceAccountEmail)
 	fmt.Printf("Creating key...\n")
-	key, err :=  sac.gcpIamClient.CreateKey(request, resource)
+	key, err := sac.gcpIamClient.CreateKey(request, resource)
 
 	if err != nil {
 		return "", "", fmt.Errorf("Projects.ServiceAccounts.Keys.Create: %v", err)
@@ -140,6 +140,6 @@ func extractKeyId(keyName string) string {
 	return keyId
 }
 
-func addKeyIdToJsonFile(keyJsonFile string, keyId string)  string {
-	return strings.Replace(keyJsonFile, ".json", "-" + keyId + ".json", -1)
+func addKeyIdToJsonFile(keyJsonFile string, keyId string) string {
+	return strings.Replace(keyJsonFile, ".json", "-"+keyId+".json", -1)
 }

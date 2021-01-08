@@ -1,9 +1,10 @@
 package secret
 
 import (
+	"os"
+
 	"github.com/iac-io/myiac/internal/cluster"
 	"github.com/iac-io/myiac/internal/commandline"
-	"os"
 )
 
 type SecretManager interface {
@@ -11,14 +12,14 @@ type SecretManager interface {
 }
 
 type TlsSecret struct {
-	name string
+	name        string
 	tlsCertPath string
-	tlsKeyPath string
+	tlsKeyPath  string
 }
 
 func NewTlsSecret(name string, tlsCertPath string, tlsKeyPath string) TlsSecret {
 	return TlsSecret{
-		name: name,
+		name:        name,
 		tlsCertPath: tlsCertPath,
 		tlsKeyPath:  tlsKeyPath,
 	}
@@ -31,7 +32,7 @@ type kubernetesSecretManager struct {
 
 func NewKubernetesSecretManager(namespace string, kubernetesRunner cluster.KubernetesRunner) *kubernetesSecretManager {
 	return &kubernetesSecretManager{
-		namespace: namespace,
+		namespace:        namespace,
 		kubernetesRunner: kubernetesRunner,
 	}
 }

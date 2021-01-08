@@ -2,12 +2,13 @@ package cluster
 
 import (
 	"fmt"
-	"github.com/iac-io/myiac/internal/commandline"
-	"github.com/iac-io/myiac/internal/gcp"
-	"github.com/iac-io/myiac/internal/util"
 	"log"
 	"os"
 	"time"
+
+	"github.com/iac-io/myiac/internal/commandline"
+	"github.com/iac-io/myiac/internal/gcp"
+	"github.com/iac-io/myiac/internal/util"
 )
 
 var (
@@ -34,7 +35,7 @@ func InitTerraform(tf string, project string, env string) {
 		log.Fatal(err)
 	}
 	// Check if terraform initialized
-	if _, err := os.Stat(tf+"/.terraform"); os.IsNotExist(err) {
+	if _, err := os.Stat(tf + "/.terraform"); os.IsNotExist(err) {
 		fmt.Printf("Terraform not Initialized: in %v: Intializong now...", tf+"/.terraform\n")
 		argsArray := util.StringTemplateToArgsArray("%s", "init")
 		cmd := commandline.NewWithWorkingDir("terraform", argsArray, tf)
@@ -48,7 +49,7 @@ func PlanTerraform(tp string, tf string) {
 	cmd.Run()
 }
 
-func ApplyTerraform(tp string, tf string)  {
+func ApplyTerraform(tp string, tf string) {
 	argsArray := util.StringTemplateToArgsArray("%s %s %s", "apply", "-var-file="+tf, "-auto-approve")
 	cmd := commandline.NewWithWorkingDir("terraform", argsArray, tp)
 	cmd.Run()
@@ -59,9 +60,9 @@ func CreateCluster(project string, env string, zone string, flag bool) error {
 	InitTerraform(tfvarsPath, project, env)
 	if flag {
 		log.Println("Running Plan only due to --dry-run option")
-		PlanTerraform(tfvarsPath,tfvarsFile)
+		PlanTerraform(tfvarsPath, tfvarsFile)
 	} else {
-		ApplyTerraform(tfvarsPath,tfvarsFile)
+		ApplyTerraform(tfvarsPath, tfvarsFile)
 	}
 
 	log.Printf("Kubernetes cluster created through Terraform from %s\n", tfvarsPath)

@@ -1,7 +1,7 @@
 package properties
 
 type propertyStore struct {
-	runtime RuntimeProperties
+	runtime        RuntimeProperties
 	helmProperties HelmProperties
 }
 
@@ -13,7 +13,7 @@ func (ps *propertyStore) init() *propertyStore {
 }
 
 func (ps *propertyStore) Get() *propertyStore {
-	// return the created 
+	// return the created
 	return ps
 }
 
@@ -37,11 +37,7 @@ func (r *RuntimeProperties) GetDockerImage() string {
 	return r.dockerImage
 }
 
-
 type DockerProperties struct {
-	ProjectId string
+	ProjectId      string
 	ProjectRepoUrl string
 }
-
-
-

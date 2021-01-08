@@ -10,6 +10,7 @@ type Encrypter interface {
 type encryptionService struct {
 	encrypter Encrypter
 }
+
 // NewEncryptionService create a new encrypter
 func NewEncrypter(encrypter Encrypter) *encryptionService {
 	enc := new(encryptionService)

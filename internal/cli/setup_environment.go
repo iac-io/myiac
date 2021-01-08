@@ -2,8 +2,9 @@ package cli
 
 import (
 	"fmt"
-	"github.com/urfave/cli"
 	"log"
+
+	"github.com/urfave/cli"
 )
 
 func setupEnvironmentCmd(providerFlag *cli.StringFlag, projectFlag *cli.StringFlag,

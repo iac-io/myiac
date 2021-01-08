@@ -3,9 +3,10 @@ package gcp
 import (
 	"context"
 	"fmt"
+	"log"
+
 	"github.com/iac-io/myiac/internal/util"
 	"google.golang.org/api/iterator"
-	"log"
 
 	kms "cloud.google.com/go/kms/apiv1"
 	kmspb "google.golang.org/genproto/googleapis/cloud/kms/v1"
@@ -20,13 +21,13 @@ type key struct {
 }
 
 type kmsEncrypter struct {
-	projectId string
-	locationId string
+	projectId          string
+	locationId         string
 	defaultKeyRingName string
-	defaultKeyName string
-	keyRingHolder *keyRing
-	keyHolder *key
-	kmsClient *kms.KeyManagementClient
+	defaultKeyName     string
+	keyRingHolder      *keyRing
+	keyHolder          *key
+	kmsClient          *kms.KeyManagementClient
 }
 
 // Creates a new encrypter using GCP KMS service
@@ -34,7 +35,7 @@ type kmsEncrypter struct {
 // See: https://cloud.google.com/kms/docs/creating-keys
 //
 func NewKmsEncrypter(projectId string, locationId string, defaultKeyRingName string,
-					defaultKeyName string) *kmsEncrypter {
+	defaultKeyName string) *kmsEncrypter {
 	kenc := new(kmsEncrypter)
 	kenc.projectId = projectId
 	kenc.locationId = locationId
@@ -53,10 +54,10 @@ func (kenc *kmsEncrypter) Encrypt(plainText string) (string, error) {
 
 	// Get or create a keyRing
 	if kenc.keyRingHolder == nil {
-		keyRing, err  := kenc.getOrCreateKeyRing()
+		keyRing, err := kenc.getOrCreateKeyRing()
 		if err != nil {
 			//TODO: should use stacktraces
-			log.Fatalf("Error creating keyRing %v" , err)
+			log.Fatalf("Error creating keyRing %v", err)
 		}
 		kenc.keyRingHolder = keyRing
 	}
@@ -65,7 +66,7 @@ func (kenc *kmsEncrypter) Encrypt(plainText string) (string, error) {
 	if kenc.keyHolder == nil {
 		key, err := kenc.getOrCreateCryptoKey(kenc.keyRingHolder.name, kenc.defaultKeyName)
 		if err != nil {
-			log.Fatalf("Error creating key %v" , err)
+			log.Fatalf("Error creating key %v", err)
 		}
 		kenc.keyHolder = key
 	}
@@ -78,7 +79,7 @@ func (kenc *kmsEncrypter) Encrypt(plainText string) (string, error) {
 
 	result, err := client.Encrypt(ctx, req)
 	if err != nil {
-		log.Fatalf("failed to encrypt: %v" , err)
+		log.Fatalf("failed to encrypt: %v", err)
 	}
 
 	cipherText := string(result.Ciphertext)
@@ -101,13 +102,13 @@ func (kenc *kmsEncrypter) Decrypt(cipherText string) (string, error) {
 
 	// Build the encrypt request.
 	req := &kmspb.DecryptRequest{
-		Name:      kenc.keyHolder.name,
+		Name:       kenc.keyHolder.name,
 		Ciphertext: ciphertext,
 	}
 
 	result, err := client.Decrypt(ctx, req)
 	if err != nil {
-		log.Fatalf("failed to decrypt: %v" , err)
+		log.Fatalf("failed to decrypt: %v", err)
 	}
 
 	plainText := string(result.Plaintext)
@@ -120,10 +121,10 @@ func (kenc *kmsEncrypter) Decrypt(cipherText string) (string, error) {
 func (kenc *kmsEncrypter) getEncryptionKey() {
 	// Get or create a keyRing
 	if kenc.keyRingHolder == nil {
-		keyRing, err  := kenc.getOrCreateKeyRing()
+		keyRing, err := kenc.getOrCreateKeyRing()
 		if err != nil {
 			//TODO: should use stacktraces
-			log.Fatalf("Error creating keyRing %v" , err)
+			log.Fatalf("Error creating keyRing %v", err)
 		}
 		kenc.keyRingHolder = keyRing
 	}
@@ -132,7 +133,7 @@ func (kenc *kmsEncrypter) getEncryptionKey() {
 	if kenc.keyHolder == nil {
 		key, err := kenc.getOrCreateCryptoKey(kenc.keyRingHolder.name, kenc.defaultKeyName)
 		if err != nil {
-			log.Fatalf("Error creating key %v" , err)
+			log.Fatalf("Error creating key %v", err)
 		}
 		kenc.keyHolder = key
 	}
@@ -165,13 +166,13 @@ func (kenc *kmsEncrypter) createKeyRing(id string, parent string) (*keyRing, err
 	return keyRing, nil
 }
 
-func (kenc *kmsEncrypter)  listKeyRings(parent string) ([]string, error) {
+func (kenc *kmsEncrypter) listKeyRings(parent string) ([]string, error) {
 	// Create the client.
 	ctx := context.Background()
 	client, _ := kenc.createKmsClient(ctx)
 
 	listReq := &kmspb.ListKeyRingsRequest{
-		Parent:   parent,
+		Parent: parent,
 	}
 
 	result := client.ListKeyRings(ctx, listReq)
@@ -220,7 +221,7 @@ func (kenc *kmsEncrypter) getOrCreateKeyRing() (*keyRing, error) {
 }
 
 // Creates or retrieves an existing symmetric encryption key
-func (kenc *kmsEncrypter)  getOrCreateCryptoKey(parentKeyRing string, keyName string) (*key, error) {
+func (kenc *kmsEncrypter) getOrCreateCryptoKey(parentKeyRing string, keyName string) (*key, error) {
 
 	fullKeyName := fmt.Sprintf("%s/cryptoKeys/%s",
 		parentKeyRing,
@@ -289,7 +290,7 @@ func (kenc *kmsEncrypter) listCryptoKeys(parent string) ([]string, error) {
 	}
 
 	listReq := &kmspb.ListCryptoKeysRequest{
-		Parent:   parent,
+		Parent: parent,
 	}
 
 	result := client.ListCryptoKeys(ctx, listReq)
