@@ -9,6 +9,21 @@ import (
 	"testing"
 )
 
+func TestMain(m *testing.M) {
+	code := m.Run()
+	shutdown()
+	os.Exit(code)
+}
+
+func setup() {
+
+}
+
+func shutdown() {
+	log.Printf("Cleaning up...")
+	deleteZone("test.net")
+}
+
 func TestBaseSetupFromEnv(t *testing.T) {
 
 	apiKey := "fake-api-key"
@@ -23,6 +38,7 @@ func TestBaseSetupFromEnv(t *testing.T) {
 	assert.NotNil(t, api)
 }
 
+// Learning Test: how to create a zone directly using the CF API client
 // Single run: go test -v -run TestCreateZone
 func TestCreateZone(t *testing.T) {
 	api, err := cloudflare.New(os.Getenv(cfApiKeyEnvironmentVariableName), os.Getenv(cfEmailEnvironmentVariableName))
@@ -64,10 +80,10 @@ func TestUpdateDNS(t *testing.T) {
 		log.Fatalf("Error setting up DNS test %v", err)
 	}
 
-	cfClient := NewFromEnv()
+	cfClient := NewFromEnv(zoneName)
 
 	newIpAddress := "2.2.2.2"
-	err = cfClient.UpdateDNS(zoneName, dnsName, newIpAddress)
+	err = cfClient.UpdateDNS(dnsName, newIpAddress)
 
 	if err != nil {
 		log.Fatal(err)
@@ -80,6 +96,34 @@ func TestUpdateDNS(t *testing.T) {
 	}
 
 	assert.Equal(t, newIpAddress, data)
+}
+
+func TestCreateDNS(t *testing.T) {
+	zoneName := "test.net"
+	dnsName := "testing"
+	originalIpAddress := "1.1.1.1"
+
+	err := setupTestDNS(zoneName, dnsName, originalIpAddress)
+
+	if err != nil {
+		log.Fatalf("Error setting up DNS test %v", err)
+	}
+
+	cfClient := NewFromEnv(zoneName)
+
+	otherDns := "anotherdns"
+	otherIpAddress := "3.3.3.3"
+
+	err = cfClient.CreateDNS(otherDns, otherIpAddress)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	data, err := dataForDNS(zoneName, otherDns)
+
+	assert.Nil(t, err)
+	assert.Equal(t, otherIpAddress, data)
 }
 
 func dataForDNS(zoneName string, dnsName string) (string, error) {
@@ -117,8 +161,6 @@ func dataForDNS(zoneName string, dnsName string) (string, error) {
 	return dnsRecord.Content, nil
 }
 
-//TODO: http://www.inanzzz.com/index.php/post/2t08/using-setup-and-teardown-in-golang-unit-tests
-
 func createZone(zoneName string) (string, error) {
 	api := getCfApiClient()
 
@@ -141,7 +183,6 @@ func getCfApiClient() *cloudflare.API {
 
 	return api
 }
-
 
 func deleteZone(zoneName string) error {
  	api := getCfApiClient()
