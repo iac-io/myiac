@@ -7,6 +7,9 @@ import (
 	"github.com/iac-io/myiac/internal/commandline"
 )
 
+const tlsKeyPathTmp = "/tmp/tls.key"
+const tlsCertPathTmp = "/tmp/tls.crt"
+
 type SecretManager interface {
 	CreateTlsSecret(secret TlsSecret)
 }
@@ -42,8 +45,7 @@ func CreateKubernetesSecretManager(namespace string) *kubernetesSecretManager {
 }
 
 func (ksm kubernetesSecretManager) CreateTlsSecret(secret TlsSecret) {
-	tlsKeyPathTmp := "/tmp/tls.key"
-	tlsCertPathTmp := "/tmp/tls.crt"
+
 	_ = os.Rename(secret.tlsKeyPath, tlsKeyPathTmp)
 	_ = os.Rename(secret.tlsCertPath, tlsCertPathTmp)
 	ksm.kubernetesRunner.CreateTlsSecret(secret.name, ksm.namespace, tlsKeyPathTmp, tlsCertPathTmp)
