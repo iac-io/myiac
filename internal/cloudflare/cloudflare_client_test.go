@@ -1,7 +1,6 @@
 package cloudflare
 
 import (
-	"fmt"
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/stretchr/testify/assert"
 	"log"
@@ -89,7 +88,7 @@ func TestUpdateDNS(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	data, err := dataForDNS(zoneName, dnsName)
+	data, err := cfClient.DataForDNS(dnsName)
 
 	if err != nil {
 		log.Fatal(err)
@@ -120,46 +119,46 @@ func TestCreateDNS(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	data, err := dataForDNS(zoneName, otherDns)
+	data, err := cfClient.DataForDNS(otherDns)
 
 	assert.Nil(t, err)
 	assert.Equal(t, otherIpAddress, data)
 }
 
-func dataForDNS(zoneName string, dnsName string) (string, error) {
-	api := getCfApiClient()
-
-	zoneId, err := api.ZoneIDByName(zoneName)
-
-	if err != nil {
-		return "", err
-	}
-
-	records, err := api.DNSRecords(zoneId, cloudflare.DNSRecord{})
-	if err != nil {
-		log.Printf("error: %v\n",err)
-		return "", err
-	}
-
-	var recordId = ""
-	for _, r := range records {
-		fmt.Printf("%s: %s -> %s\n", r.Name, r.ID, r.Content)
-		if r.Name == dnsName + "." + zoneName {
-			recordId = r.ID
-		}
-	}
-
-	if recordId == "" {
-		log.Printf("error: record not found for dns name %s", dnsName)
-		return "", fmt.Errorf("error: record not found for dns name %s", dnsName)
-	}
-
-	dnsRecord, _ := api.DNSRecord(zoneId, recordId)
-
-	log.Printf("Content of DNS record %s", dnsRecord.Content)
-
-	return dnsRecord.Content, nil
-}
+//func dataForDNS(zoneName string, dnsName string) (string, error) {
+//	api := getCfApiClient()
+//
+//	zoneId, err := api.ZoneIDByName(zoneName)
+//
+//	if err != nil {
+//		return "", err
+//	}
+//
+//	records, err := api.DNSRecords(zoneId, cloudflare.DNSRecord{})
+//	if err != nil {
+//		log.Printf("error: %v\n",err)
+//		return "", err
+//	}
+//
+//	var recordId = ""
+//	for _, r := range records {
+//		fmt.Printf("%s: %s -> %s\n", r.Name, r.ID, r.Content)
+//		if r.Name == dnsName + "." + zoneName {
+//			recordId = r.ID
+//		}
+//	}
+//
+//	if recordId == "" {
+//		log.Printf("error: record not found for dns name %s", dnsName)
+//		return "", fmt.Errorf("error: record not found for dns name %s", dnsName)
+//	}
+//
+//	dnsRecord, _ := api.DNSRecord(zoneId, recordId)
+//
+//	log.Printf("Content of DNS record %s", dnsRecord.Content)
+//
+//	return dnsRecord.Content, nil
+//}
 
 func createZone(zoneName string) (string, error) {
 	api := getCfApiClient()

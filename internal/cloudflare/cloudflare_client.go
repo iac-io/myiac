@@ -12,9 +12,13 @@ const (
 	cfEmailEnvironmentVariableName = "CF_EMAIL"
 )
 
+// Wrapper around Cloudflare Go SDK that allows managing DNS entries. More specifically,
+// create, update or obtain A records (IP address) linked with a dns name. Zone should be created beforehand
+// in Cloudflare. An valid API key and email are required to use this client.
 type CfClient interface {
 	UpdateDNS(dnsName string, ipAddress string) error
 	CreateDNS(dnsName string, ipAddress string) error
+	DataForDNS(dnsName string) (string, error)
 }
 
 type cfClient struct {
@@ -43,6 +47,7 @@ func (cc cfClient) UpdateDNS(dnsName string, ipAddress string) error {
 
 	// Fetch the zone ID
 	zoneName := cc.zoneName
+
 	zoneId, err := cc.cfApi.ZoneIDByName(zoneName)
 	if err != nil {
 		log.Printf("error %v \n", err)
@@ -101,5 +106,41 @@ func (cc cfClient) CreateDNS(dnsName string, ipAddress string) error {
 
 	return nil
 }
+
+func (cc cfClient) DataForDNS(dnsName string) (string, error) {
+
+	zoneName := cc.zoneName
+	zoneId, err := cc.cfApi.ZoneIDByName(zoneName)
+
+	if err != nil {
+		return "", err
+	}
+
+	records, err := cc.cfApi.DNSRecords(zoneId, cloudflare.DNSRecord{})
+	if err != nil {
+		log.Printf("error: %v\n",err)
+		return "", err
+	}
+
+	var recordId = ""
+	for _, r := range records {
+		fmt.Printf("%s: %s -> %s\n", r.Name, r.ID, r.Content)
+		if r.Name == dnsName + "." + zoneName {
+			recordId = r.ID
+		}
+	}
+
+	if recordId == "" {
+		log.Printf("error: record not found for dns name %s", dnsName)
+		return "", fmt.Errorf("error: record not found for dns name %s", dnsName)
+	}
+
+	dnsRecord, _ := cc.cfApi.DNSRecord(zoneId, recordId)
+
+	log.Printf("Content of DNS record %s", dnsRecord.Content)
+
+	return dnsRecord.Content, nil
+}
+
 
 
