@@ -47,7 +47,6 @@ func NewFromEnv(zoneName string) (CfClient, error) {
 func (cc cfClient) UpdateDNS(dnsName string, ipAddress string) error {
 	zoneName := cc.zoneName
 
-	// Fetch the zone ID
 	zoneId, err := cc.cfApi.ZoneIDByName(zoneName)
 	if err != nil {
 		return fmt.Errorf("error getting id by name: %s", err)

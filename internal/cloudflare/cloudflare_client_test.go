@@ -79,7 +79,7 @@ func TestUpdateDNS(t *testing.T) {
 		log.Fatalf("Error setting up DNS test %v", err)
 	}
 
-	cfClient := NewFromEnv(zoneName)
+	cfClient, _ := NewFromEnv(zoneName)
 
 	newIpAddress := "2.2.2.2"
 	err = cfClient.UpdateDNS(dnsName, newIpAddress)
@@ -108,7 +108,7 @@ func TestCreateDNS(t *testing.T) {
 		log.Fatalf("Error setting up DNS test %v", err)
 	}
 
-	cfClient := NewFromEnv(zoneName)
+	cfClient, _ := NewFromEnv(zoneName)
 
 	otherDns := "anotherdns"
 	otherIpAddress := "3.3.3.3"
