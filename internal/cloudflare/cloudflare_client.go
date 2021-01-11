@@ -26,38 +26,36 @@ type cfClient struct {
 	cfApi *cloudflare.API
 }
 
-func NewWithApiKey(zoneName string, apiKey string, accountEmail string) CfClient {
+// NewWithApiKey creates a new client for Cloudflare passing in the zone name, API key, and account email
+func NewWithApiKey(zoneName string, apiKey string, accountEmail string) (CfClient, error) {
 	api, err := cloudflare.New(apiKey, accountEmail)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("error creating Cloudflare client")
 	}
 
-	return &cfClient{zoneName: zoneName, cfApi: api}
+	return &cfClient{zoneName: zoneName, cfApi: api}, nil
 }
 
 // CF_API_KEY from gs://xxx-keys/cf-key.dec
 // CF_EMAIL
-func NewFromEnv(zoneName string) CfClient {
+func NewFromEnv(zoneName string) (CfClient, error) {
 	apiKey  := os.Getenv(cfApiKeyEnvironmentVariableName)
 	accountEmail := os.Getenv(cfEmailEnvironmentVariableName)
 	return NewWithApiKey(zoneName, apiKey, accountEmail)
 }
 
 func (cc cfClient) UpdateDNS(dnsName string, ipAddress string) error {
-
-	// Fetch the zone ID
 	zoneName := cc.zoneName
 
+	// Fetch the zone ID
 	zoneId, err := cc.cfApi.ZoneIDByName(zoneName)
 	if err != nil {
-		log.Printf("error %v \n", err)
-		return err
+		return fmt.Errorf("error getting id by name: %s", err)
 	}
 
 	records, err := cc.cfApi.DNSRecords(zoneId, cloudflare.DNSRecord{})
 	if err != nil {
-		log.Printf("error: %v\n",err)
-		return err
+		return fmt.Errorf("cannot read DNS records %s",err)
 	}
 
 	var recordId = ""
@@ -69,7 +67,6 @@ func (cc cfClient) UpdateDNS(dnsName string, ipAddress string) error {
 	}
 
 	if recordId == "" {
-		log.Printf("error: record not found for dns name %s", dnsName)
 		return fmt.Errorf("error: record not found for dns name %s", dnsName)
 	}
 
@@ -78,8 +75,7 @@ func (cc cfClient) UpdateDNS(dnsName string, ipAddress string) error {
 	err = cc.cfApi.UpdateDNSRecord(zoneId, recordId, dnsRecord)
 
 	if err != nil {
-		log.Printf("error updating DNS record %v", err)
-		return err
+		return fmt.Errorf("error updating DNS record %v", err)
 	}
 
 	return nil
@@ -90,16 +86,14 @@ func (cc cfClient) CreateDNS(dnsName string, ipAddress string) error {
 	zoneId, err := cc.cfApi.ZoneIDByName(zoneName)
 
 	if err != nil {
-		log.Printf("Error getting Zone ID by Name %v", zoneId)
-		return err
+		return fmt.Errorf("error getting Zone ID by Name %s: %s", zoneId, err)
 	}
 
 	record := cloudflare.DNSRecord{Name: dnsName, Type: "A", Content: ipAddress, TTL: 300}
 	response, err := cc.cfApi.CreateDNSRecord(zoneId, record)
 
 	if err != nil {
-		log.Printf("Error creating DNS record %v", err)
-		return err
+		return fmt.Errorf("error creating DNS record %s", err)
 	}
 
 	log.Printf("Successfully created DNS Record %v", response)
@@ -108,7 +102,6 @@ func (cc cfClient) CreateDNS(dnsName string, ipAddress string) error {
 }
 
 func (cc cfClient) DataForDNS(dnsName string) (string, error) {
-
 	zoneName := cc.zoneName
 	zoneId, err := cc.cfApi.ZoneIDByName(zoneName)
 
@@ -118,8 +111,7 @@ func (cc cfClient) DataForDNS(dnsName string) (string, error) {
 
 	records, err := cc.cfApi.DNSRecords(zoneId, cloudflare.DNSRecord{})
 	if err != nil {
-		log.Printf("error: %v\n",err)
-		return "", err
+		return "", fmt.Errorf("cannot read DNS records %s",err)
 	}
 
 	var recordId = ""
