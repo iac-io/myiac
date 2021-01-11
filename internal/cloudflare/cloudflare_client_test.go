@@ -125,41 +125,6 @@ func TestCreateDNS(t *testing.T) {
 	assert.Equal(t, otherIpAddress, data)
 }
 
-//func dataForDNS(zoneName string, dnsName string) (string, error) {
-//	api := getCfApiClient()
-//
-//	zoneId, err := api.ZoneIDByName(zoneName)
-//
-//	if err != nil {
-//		return "", err
-//	}
-//
-//	records, err := api.DNSRecords(zoneId, cloudflare.DNSRecord{})
-//	if err != nil {
-//		log.Printf("error: %v\n",err)
-//		return "", err
-//	}
-//
-//	var recordId = ""
-//	for _, r := range records {
-//		fmt.Printf("%s: %s -> %s\n", r.Name, r.ID, r.Content)
-//		if r.Name == dnsName + "." + zoneName {
-//			recordId = r.ID
-//		}
-//	}
-//
-//	if recordId == "" {
-//		log.Printf("error: record not found for dns name %s", dnsName)
-//		return "", fmt.Errorf("error: record not found for dns name %s", dnsName)
-//	}
-//
-//	dnsRecord, _ := api.DNSRecord(zoneId, recordId)
-//
-//	log.Printf("Content of DNS record %s", dnsRecord.Content)
-//
-//	return dnsRecord.Content, nil
-//}
-
 func createZone(zoneName string) (string, error) {
 	api := getCfApiClient()
 
