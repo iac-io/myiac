@@ -1,17 +1,14 @@
 package gcp
 
 import (
+	kms "cloud.google.com/go/kms/apiv1"
 	"context"
 	"fmt"
-	"github.com/dfernandezm/myiac/internal/encryption"
-	"log"
-	"google.golang.org/api/iterator"
-
+	"github.com/iac-io/myiac/internal/encryption"
 	"github.com/iac-io/myiac/internal/util"
 	"google.golang.org/api/iterator"
-
-	kms "cloud.google.com/go/kms/apiv1"
 	kmspb "google.golang.org/genproto/googleapis/cloud/kms/v1"
+	"log"
 )
 
 type keyRing struct {
