@@ -17,15 +17,16 @@ var (
 )
 
 func InstallHelm() {
-	fmt.Println("Installing Helm in newly created cluster")
-
-	currentDir := util.CurrentExecutableDir()
-	helperScriptsLocation := currentDir + "/helperScripts"
-	fmt.Printf("Helper scripts path is %s", helperScriptsLocation)
-
-	action := "./install-helm.sh"
-	cmd := commandline.NewWithWorkingDir(action, []string{}, helperScriptsLocation)
-	cmd.Run()
+	if _, err := os.Stat(util.GetHomeDir() + "/.helm"); os.IsNotExist(err) {
+		log.Println("Waiting 10 seconds for cluster to stabilize before installing Helm")
+		time.Sleep(10 * time.Second)
+		log.Println("Helm installation not found. Starting now")
+		commandline.NewWithWorkingDir("helm", util.StringTemplateToArgsArray("%v %v", "repo", "install"), util.GetHomeDir()).Run()
+	} else {
+		log.Println("Helm already Installed. Updating repos.")
+		commandline.NewWithWorkingDir("helm", util.StringTemplateToArgsArray("%v %v %v", "list", "-all"),
+			util.GetHomeDir()).Run()
+	}
 }
 
 func InitTerraform(tf string, project string, env string) {
@@ -66,12 +67,8 @@ func CreateCluster(project string, env string, zone string, flag bool) error {
 	}
 
 	log.Printf("Kubernetes cluster created through Terraform from %s\n", tfvarsPath)
-	log.Println("Waiting 10 seconds for cluster to stabilize before taking next steps\n")
-	time.Sleep(10 * time.Second)
 
-	//TODO: Helm Needs fixing
-	//fmt.Println("Installing Helm into newly created cluster...")
-	//InstallHelm()
+	InstallHelm()
 	return nil
 }
 

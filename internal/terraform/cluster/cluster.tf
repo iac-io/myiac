@@ -1,5 +1,3 @@
-
-
 locals {
   
   firewall_source_ranges  = "81.144.154.0/24"
