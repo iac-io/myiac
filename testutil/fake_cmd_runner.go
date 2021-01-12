@@ -1,9 +1,8 @@
 package testutil
 
 import (
-	"strings"
-
 	"github.com/iac-io/myiac/internal/commandline"
+	"strings"
 )
 
 type fakeRunner struct {
@@ -35,6 +34,9 @@ func (fk fakeRunner) Setup(cmd string, args []string) {
 }
 
 func (fk fakeRunner) IgnoreError(ignoreError bool) {
+}
+
+func (fk fakeRunner) SetSuppressOutput(suppressOutput bool) {
 }
 
 func (fk fakeRunner) GetCmdLines() []string {

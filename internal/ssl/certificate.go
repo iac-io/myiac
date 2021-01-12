@@ -16,7 +16,7 @@ type SecretCertStore struct {
 	secretManager secret.SecretManager
 }
 
-func NewSecretCertStore(secretManager secret.SecretManager) *SecretCertStore {
+func NewSecretCertStore(secretManager secret.SecretManager) CertStore {
 	return &SecretCertStore{secretManager: secretManager}
 }
 

@@ -9,6 +9,7 @@ import (
 
 type SecretManager interface {
 	CreateTlsSecret(secret TlsSecret)
+	CreateFileSecret(secretName string, filePath string)
 }
 
 type TlsSecret struct {

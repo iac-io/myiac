@@ -32,7 +32,7 @@ func GetPods() {
 func executeGetIpsCmd() map[string]interface{} {
 	argsArray := []string{"get", "nodes", "-o", "json"}
 	cmd := commandline.New("kubectl", argsArray)
-	cmd.IsSuppressOutput = true
+	cmd.SetSuppressOutput(true)
 	cmdResult := cmd.Run()
 	cmdOutput := cmdResult.Output
 	json := util.Parse(cmdOutput)
@@ -67,7 +67,7 @@ func CreateSecretFromLiteral(name string, namespace string, literals map[string]
 	fromLiteralArg = strings.TrimSpace(fromLiteralArg)
 	argsArray := []string{"create", "secret", "generic", name, fromLiteralArg, "-n", namespace}
 	cmd := commandline.New("kubectl", argsArray)
-	cmd.IsSuppressOutput = true
+	cmd.SetSuppressOutput(true)
 	cmd.Run()
 }
 
@@ -127,7 +127,7 @@ func (kr kubernetesRunner) FindSecret(name string, namespace string) string {
 func deleteSecret(name string, namespace string) {
 	argsArray := []string{"delete", "secret", name, "-n", namespace}
 	cmd := commandline.New("kubectl", argsArray)
-	cmd.IsSuppressOutput = true
+	cmd.SetSuppressOutput(true)
 	cmd.IgnoreError(true)
 	cmd.Run()
 }

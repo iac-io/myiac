@@ -19,6 +19,7 @@ type CommandRunner interface {
 	SetupWithoutOutput(cmd string, args []string)
 	SetupCmdLine(cmdLine string)
 	IgnoreError(ignoreError bool)
+	SetSuppressOutput(suppressOutput bool)
 	Run() CommandOutput
 }
 
@@ -108,6 +109,10 @@ func (c *commandExec) SetupWithoutOutput(executable string, arguments []string) 
 
 func (c *commandExec) SetWorkingDir(workingDir string) {
 	c.workingDir = workingDir
+}
+
+func (c *commandExec) SetSuppressOutput(suppressOutput bool) {
+	c.IsSuppressOutput = suppressOutput
 }
 
 func (c *commandExec) Run() CommandOutput {

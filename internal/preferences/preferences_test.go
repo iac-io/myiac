@@ -2,11 +2,11 @@ package preferences
 
 import (
 	"fmt"
-	"os"
-	"testing"
-
 	"github.com/iac-io/myiac/internal/util"
 	"github.com/stretchr/testify/assert"
+	"log"
+	"os"
+	"testing"
 )
 
 var prefsFilename = "/tmp/.myiac/testPrefs"
@@ -23,6 +23,7 @@ func setup() {
 }
 
 func teardown() {
+	log.Printf("Cleaning up prefs file")
 	_ = os.Remove(prefsFilename)
 }
 
