@@ -3,7 +3,9 @@ package gcp
 import (
 	"context"
 	"fmt"
+	"github.com/dfernandezm/myiac/internal/encryption"
 	"log"
+	"google.golang.org/api/iterator"
 
 	"github.com/iac-io/myiac/internal/util"
 	"google.golang.org/api/iterator"
@@ -35,7 +37,7 @@ type kmsEncrypter struct {
 // See: https://cloud.google.com/kms/docs/creating-keys
 //
 func NewKmsEncrypter(projectId string, locationId string, defaultKeyRingName string,
-	defaultKeyName string) *kmsEncrypter {
+	defaultKeyName string) encryption.Encrypter {
 	kenc := new(kmsEncrypter)
 	kenc.projectId = projectId
 	kenc.locationId = locationId

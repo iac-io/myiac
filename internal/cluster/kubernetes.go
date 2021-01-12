@@ -83,7 +83,7 @@ type kubernetesRunner struct {
 	cmdRunner commandline.CommandRunner
 }
 
-func NewKubernetesRunner(commandRunner commandline.CommandRunner) *kubernetesRunner {
+func NewKubernetesRunner(commandRunner commandline.CommandRunner) KubernetesRunner {
 	return &kubernetesRunner{cmdRunner: commandRunner}
 }
 

@@ -30,14 +30,14 @@ type kubernetesSecretManager struct {
 	kubernetesRunner cluster.KubernetesRunner
 }
 
-func NewKubernetesSecretManager(namespace string, kubernetesRunner cluster.KubernetesRunner) *kubernetesSecretManager {
+func NewKubernetesSecretManager(namespace string, kubernetesRunner cluster.KubernetesRunner) SecretManager {
 	return &kubernetesSecretManager{
 		namespace:        namespace,
 		kubernetesRunner: kubernetesRunner,
 	}
 }
 
-func CreateKubernetesSecretManager(namespace string) *kubernetesSecretManager {
+func CreateKubernetesSecretManager(namespace string) SecretManager {
 	return NewKubernetesSecretManager(namespace, cluster.NewKubernetesRunner(commandline.NewEmpty()))
 }
 
