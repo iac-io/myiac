@@ -1,8 +1,9 @@
 package testutil
 
 import (
-	"github.com/iac-io/myiac/internal/commandline"
 	"strings"
+
+	"github.com/iac-io/myiac/internal/commandline"
 )
 
 type fakeRunner struct {

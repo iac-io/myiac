@@ -12,7 +12,7 @@ import (
 func TestCreateGCPKMSService(t *testing.T) {
 	gcpClient := NewKmsEncrypter("moneycol", "moneycol-keyring",
 		"moneycol-keyring", "moneycol-infra-key")
-	assert.NotNil(t,gcpClient)
+	assert.NotNil(t, gcpClient)
 }
 
 func TestEncrypts(t *testing.T) {

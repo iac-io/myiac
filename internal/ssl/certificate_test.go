@@ -1,12 +1,13 @@
 package ssl
 
 import (
+	"testing"
+
 	"github.com/iac-io/myiac/internal/cluster"
 	"github.com/iac-io/myiac/internal/secret"
 	"github.com/iac-io/myiac/internal/util"
 	"github.com/iac-io/myiac/testutil"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestCreateTlsCertificate(t *testing.T) {

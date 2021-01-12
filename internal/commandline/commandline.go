@@ -24,8 +24,8 @@ type CommandRunner interface {
 }
 
 type CommandOptions struct {
-	CommandLine string
-	WorkingDir string
+	CommandLine    string
+	WorkingDir     string
 	SuppressOutput bool
 }
 
