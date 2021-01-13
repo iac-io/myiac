@@ -68,7 +68,6 @@ func CreateCluster(project string, env string, zone string, flag bool) error {
 
 	log.Printf("Kubernetes cluster created through Terraform from %s\n", tfvarsPath)
 
-	InstallHelm()
 	return nil
 }
 
