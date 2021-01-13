@@ -2,12 +2,13 @@ package cli
 
 import (
 	"fmt"
-	"github.com/iac-io/myiac/internal/commandline"
-	"github.com/iac-io/myiac/internal/preferences"
-	"github.com/iac-io/myiac/internal/util"
 	"log"
 	"regexp"
 	"strings"
+
+	"github.com/iac-io/myiac/internal/commandline"
+	"github.com/iac-io/myiac/internal/preferences"
+	"github.com/iac-io/myiac/internal/util"
 )
 
 type Provider interface {
@@ -39,17 +40,17 @@ func (pf ProviderFactory) getProvider() Provider {
 }
 
 type GcpProvider struct {
-	projectId string
-	keyLocation string
+	projectId     string
+	keyLocation   string
 	masterSaEmail string
-	gkeCluster GkeCluster
+	gkeCluster    GkeCluster
 }
 
 func NewGcpProvider(projectId string, keyLocation string, gkeCluster GkeCluster) *GcpProvider {
 	validateKeyLocation(keyLocation)
-	return &GcpProvider{projectId:projectId,
-		keyLocation:keyLocation,
-		gkeCluster:gkeCluster}
+	return &GcpProvider{projectId: projectId,
+		keyLocation: keyLocation,
+		gkeCluster:  gkeCluster}
 }
 
 // Setup activate master service account from key
@@ -75,7 +76,7 @@ func (gcp GcpProvider) checkSetup() bool {
 		status := accountAuth["status"]
 
 		fmt.Printf("Checking account %s\n", saEmail)
-		if status == "ACTIVE"  {
+		if status == "ACTIVE" {
 			fmt.Printf("Already authenticated for %s\n", saEmail)
 			return true
 		}
@@ -134,7 +135,8 @@ func validateKeyLocation(keyLocation string) {
 	}
 }
 
-func SetupProvider(providerValue string, zone string, clusterName string, project string, keyLocation string) {
+func SetupProvider(providerValue string, zone string, clusterName string, project string,
+	keyLocation string, dryrunflag bool) {
 	var provider Provider
 	if providerValue == "gcp" {
 		gkeCluster := GkeCluster{zone: zone, name: clusterName}
@@ -142,8 +144,10 @@ func SetupProvider(providerValue string, zone string, clusterName string, projec
 	} else {
 		panic(fmt.Errorf("invalid provider provided: %v", providerValue))
 	}
-
 	provider.Setup()
-	provider.ClusterSetup()
+	if !dryrunflag {
+		provider.ClusterSetup()
+	}
+
 	log.Printf("Set local kubectl to project: %v \n", project)
 }
