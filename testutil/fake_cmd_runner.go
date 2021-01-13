@@ -37,6 +37,9 @@ func (fk fakeRunner) Setup(cmd string, args []string) {
 func (fk fakeRunner) IgnoreError(ignoreError bool) {
 }
 
+func (fk fakeRunner) SetSuppressOutput(suppressOutput bool) {
+}
+
 func (fk fakeRunner) GetCmdLines() []string {
 	return fk.CmdLines
 }

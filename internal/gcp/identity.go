@@ -28,13 +28,13 @@ type gcpIamClient struct {
 }
 
 // NewGcpIamClient Creates a new IamClient with external provided context and *iam.Service
-func NewGcpIamClient(ctx context.Context, iamService *iam.Service) *gcpIamClient {
+func NewGcpIamClient(ctx context.Context, iamService *iam.Service) IamGcpClient {
 	return &gcpIamClient{iamService: iamService, ctx: ctx}
 }
 
 // NewGcpIamClient Creates a new IamClient with default context.
 // Authentication against GCP must have already been performed when invoking this operation
-func NewDefaultIamClient() *gcpIamClient {
+func NewDefaultIamClient() IamGcpClient {
 	ctx := context.Background()
 	return NewGcpIamClient(ctx, getIamService(ctx))
 }
@@ -77,13 +77,13 @@ type gcpObjectStorageCache struct {
 
 // NewGcpObjectStorageCache creates a GCP-based Object Storage cache, optionally
 // receiving a Context. It injects a ObjectStorageClient providing the base operations
-func NewGcpObjectStorageCache(ctx context.Context, client ObjectStorageGcpClient) *gcpObjectStorageCache {
+func NewGcpObjectStorageCache(ctx context.Context, client ObjectStorageGcpClient) ObjectStorageCache {
 	return &gcpObjectStorageCache{client: client, ctx: ctx}
 }
 
 // NewDefaultObjectStorageCache creates a GCP-based Object Storage cache using a
 // inner context
-func NewDefaultObjectStorageCache() *gcpObjectStorageCache {
+func NewDefaultObjectStorageCache() ObjectStorageCache {
 	ctx := context.Background()
 	return NewGcpObjectStorageCache(ctx, getObjectStorageClient(ctx))
 }

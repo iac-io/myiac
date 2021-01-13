@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"log"
 
+	kms "cloud.google.com/go/kms/apiv1"
+	"github.com/iac-io/myiac/internal/encryption"
 	"github.com/iac-io/myiac/internal/util"
 	"google.golang.org/api/iterator"
-
-	kms "cloud.google.com/go/kms/apiv1"
 	kmspb "google.golang.org/genproto/googleapis/cloud/kms/v1"
 )
 
@@ -35,7 +35,7 @@ type kmsEncrypter struct {
 // See: https://cloud.google.com/kms/docs/creating-keys
 //
 func NewKmsEncrypter(projectId string, locationId string, defaultKeyRingName string,
-	defaultKeyName string) *kmsEncrypter {
+	defaultKeyName string) encryption.Encrypter {
 	kenc := new(kmsEncrypter)
 	kenc.projectId = projectId
 	kenc.locationId = locationId
