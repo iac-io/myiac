@@ -295,6 +295,8 @@ func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFl
 				//Setup ENV Variable with the json credentials
 				gcp.SetKeyEnvVar(key)
 			}
+			log.Printf("Setting kubectl to work with new cluster: %v", project+"-"+env)
+			SetupProvider(provider, zone, project+"-"+env, project, key)
 			//TODO: pass-in variables
 			err := cluster.CreateCluster(project, env, zone, dryrunflag)
 			if err != nil {
