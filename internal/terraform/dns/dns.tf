@@ -1,5 +1,6 @@
+//TODO: Remove this as it's per deployement related setup. Default code needs to deploy clean cluster only
 provider "google-beta" {
-  credentials = "${file("/Users/dfernandez/account.json")}"
+  credentials = file("/Users/dfernandez/account.json")
   project     = "moneycol"
   region      = "europe-west1-b"
 }
@@ -48,11 +49,11 @@ resource "google_dns_managed_zone" "moneycol_zone_free_domain" {
 # terraform import google_dns_record_set.moneycol_dev "moneycol/money-zone-free/dev.moneycol.ml./A"
 # terraform state show google_dns_record_set.moneycol_dev
 resource "google_dns_record_set" "moneycol_dev" {
-  managed_zone = "${google_dns_managed_zone.moneycol_zone_free_domain.name}"
+  managed_zone = google_dns_managed_zone.moneycol_zone_free_domain.name
   name         = "dev.${google_dns_managed_zone.moneycol_zone_free_domain.dns_name}"
   project      = "moneycol"
   rrdatas = [
-    "${var.dev_ip}",
+    var.dev_ip,
   ]
   ttl  = 30
   type = "A"

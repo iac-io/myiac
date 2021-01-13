@@ -2,14 +2,15 @@ package cloudflare
 
 import (
 	"fmt"
-	"github.com/cloudflare/cloudflare-go"
 	"log"
 	"os"
+
+	"github.com/cloudflare/cloudflare-go"
 )
 
 const (
 	cfApiKeyEnvironmentVariableName = "CF_API_KEY"
-	cfEmailEnvironmentVariableName = "CF_EMAIL"
+	cfEmailEnvironmentVariableName  = "CF_EMAIL"
 )
 
 // Wrapper around Cloudflare Go SDK that allows managing DNS entries. More specifically,
@@ -23,7 +24,7 @@ type CfClient interface {
 
 type cfClient struct {
 	zoneName string
-	cfApi *cloudflare.API
+	cfApi    *cloudflare.API
 }
 
 // NewWithApiKey creates a new client for Cloudflare passing in the zone name, API key, and account email
@@ -39,7 +40,7 @@ func NewWithApiKey(zoneName string, apiKey string, accountEmail string) (CfClien
 // CF_API_KEY from gs://xxx-keys/cf-key.dec
 // CF_EMAIL
 func NewFromEnv(zoneName string) (CfClient, error) {
-	apiKey  := os.Getenv(cfApiKeyEnvironmentVariableName)
+	apiKey := os.Getenv(cfApiKeyEnvironmentVariableName)
 	accountEmail := os.Getenv(cfEmailEnvironmentVariableName)
 	return NewWithApiKey(zoneName, apiKey, accountEmail)
 }
@@ -54,13 +55,13 @@ func (cc cfClient) UpdateDNS(dnsName string, ipAddress string) error {
 
 	records, err := cc.cfApi.DNSRecords(zoneId, cloudflare.DNSRecord{})
 	if err != nil {
-		return fmt.Errorf("cannot read DNS records %s",err)
+		return fmt.Errorf("cannot read DNS records %s", err)
 	}
 
 	var recordId = ""
 	for _, r := range records {
 		fmt.Printf("%s: %s -> %s\n", r.Name, r.ID, r.Content)
-		if r.Name == dnsName + "." + zoneName {
+		if r.Name == dnsName+"."+zoneName {
 			recordId = r.ID
 		}
 	}
@@ -110,13 +111,13 @@ func (cc cfClient) DataForDNS(dnsName string) (string, error) {
 
 	records, err := cc.cfApi.DNSRecords(zoneId, cloudflare.DNSRecord{})
 	if err != nil {
-		return "", fmt.Errorf("cannot read DNS records %s",err)
+		return "", fmt.Errorf("cannot read DNS records %s", err)
 	}
 
 	var recordId = ""
 	for _, r := range records {
 		fmt.Printf("%s: %s -> %s\n", r.Name, r.ID, r.Content)
-		if r.Name == dnsName + "." + zoneName {
+		if r.Name == dnsName+"."+zoneName {
 			recordId = r.ID
 		}
 	}
@@ -132,6 +133,3 @@ func (cc cfClient) DataForDNS(dnsName string) (string, error) {
 
 	return dnsRecord.Content, nil
 }
-
-
-

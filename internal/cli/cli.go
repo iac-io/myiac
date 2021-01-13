@@ -2,6 +2,11 @@ package cli
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"strconv"
+	"strings"
+
 	"github.com/iac-io/myiac/internal/cluster"
 	"github.com/iac-io/myiac/internal/deploy"
 	"github.com/iac-io/myiac/internal/docker"
@@ -9,10 +14,6 @@ import (
 	"github.com/iac-io/myiac/internal/gcp"
 	props "github.com/iac-io/myiac/internal/properties"
 	"github.com/urfave/cli"
-	"log"
-	"os"
-	"strconv"
-	"strings"
 )
 
 const GCRPrefix = "eu.gcr.io"
@@ -70,7 +71,7 @@ func BuildCli() {
 
 func cryptCmd(projectFlag *cli.StringFlag) cli.Command {
 	modeFlag := &cli.StringFlag{
-		Name: "mode, m",
+		Name:  "mode, m",
 		Usage: "encrypt or decrypt",
 	}
 
@@ -109,7 +110,7 @@ func cryptCmd(projectFlag *cli.StringFlag) cli.Command {
 			encrypter := encryption.NewEncrypter(kmsEncrypter)
 
 			if mode != "encrypt" && mode != "decrypt" {
-				return cli.NewExitError("mode can only be 'encrypt' or 'decrypt'",-1)
+				return cli.NewExitError("mode can only be 'encrypt' or 'decrypt'", -1)
 			}
 
 			if mode == "encrypt" {
@@ -149,7 +150,7 @@ func resizeClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFl
 
 			//TODO: read from project manifest
 			zone := "europe-west1-b"
-			
+
 			gcp.ResizeCluster(project, zone, env, nodePoolsSize)
 			return nil
 		},
@@ -225,7 +226,6 @@ func dockerBuildCmd(projectFlag *cli.StringFlag) cli.Command {
 	}
 }
 
-
 func deployAppSetup(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag, propertiesFlag *cli.StringFlag) cli.Command {
 	appNameFlag := &cli.StringFlag{Name: "app, a",
 		Usage: "The app to deploy. A helm chart with the same name must exist in the CHARTS_LOCATION"}
@@ -243,7 +243,7 @@ func deployAppSetup(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag
 		Action: func(c *cli.Context) error {
 			fmt.Printf("Deploying with flags\n")
 			if err := validateBaseFlags(c); err != nil {
-				fmt.Printf("Returning error %e\n",err)
+				fmt.Printf("Returning error %e\n", err)
 				return err
 			}
 
@@ -304,10 +304,10 @@ func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFl
 				// Set local env kube for local connectivity to new cluster
 				log.Printf("Setting kubectl to work with new cluster: %v", project+"-"+env)
 				SetupProvider(provider, zone, project+"-"+env, project, key)
+				cluster.InstallHelm()
 			}
 
 			return nil
-
 
 		},
 	}
@@ -406,11 +406,11 @@ func validateNodePoolsSize(ctx *cli.Context) error {
 	if val < 0 {
 		logErrorAndExit(fmt.Sprintf("Invalid nodePoolsSize: %d", val))
 	}
-	
+
 	if len(nodePoolsSizeValue) == 0 {
 		logErrorAndExit("Invalid nodePoolsSize: " + nodePoolsSizeValue)
-	} 
-	
+	}
+
 	return nil
 }
 
