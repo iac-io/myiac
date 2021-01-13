@@ -1,11 +1,13 @@
 package cloudflare
 
 import (
-	"github.com/cloudflare/cloudflare-go"
-	"github.com/stretchr/testify/assert"
+	"fmt"
 	"log"
 	"os"
 	"testing"
+
+	"github.com/cloudflare/cloudflare-go"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
@@ -23,7 +25,7 @@ func shutdown() {
 	deleteZone("test.net")
 }
 
-func TestBaseSetupFromEnv(t *testing.T) {
+func TestBaseSetupFromApiKey(t *testing.T) {
 
 	apiKey := "fake-api-key"
 	accountEmail := "account@email.com"
@@ -50,13 +52,13 @@ func TestCreateZone(t *testing.T) {
 	zone, err := api.CreateZone("test.net", false, account, "")
 
 	if err != nil {
-		log.Fatal("Failed to create zone")
+		log.Fatalf("Failed to create zone %v", err)
 	}
 
 	zoneDetails, err := api.ZoneDetails(zone.ID)
 
 	if err != nil {
-		log.Fatal("Failed to get zone details")
+		log.Fatalf("Failed to get zone details %v", err)
 	}
 
 	log.Printf("Created zone %s", zoneDetails.Name)
@@ -116,7 +118,7 @@ func TestCreateDNS(t *testing.T) {
 	err = cfClient.CreateDNS(otherDns, otherIpAddress)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("error creating DNS %v", err)
 	}
 
 	data, err := cfClient.DataForDNS(otherDns)
@@ -132,8 +134,7 @@ func createZone(zoneName string) (string, error) {
 	zone, err := api.CreateZone(zoneName, false, account, "")
 
 	if err != nil {
-		log.Printf("error creating Zone: %v", err)
-		return "", err
+		return "", fmt.Errorf("error creating Zone: %v", err)
 	}
 
 	return zone.ID, nil
@@ -142,26 +143,26 @@ func createZone(zoneName string) (string, error) {
 func getCfApiClient() *cloudflare.API {
 	api, err := cloudflare.New(os.Getenv("CF_API_KEY"), os.Getenv("CF_EMAIL"))
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("error getting api client: %v", err)
 	}
 
 	return api
 }
 
 func deleteZone(zoneName string) error {
- 	api := getCfApiClient()
+	api := getCfApiClient()
 
- 	zoneId, err := api.ZoneIDByName(zoneName)
+	zoneId, err := api.ZoneIDByName(zoneName)
 
- 	if err != nil {
- 		return err
+	if err != nil {
+		return err
 	}
 
- 	_, err = api.DeleteZone(zoneId)
+	_, err = api.DeleteZone(zoneId)
 
- 	log.Printf("Zone with name %s deleted", zoneName)
+	log.Printf("Zone with name %s deleted", zoneName)
 
- 	return err
+	return err
 }
 
 func createDnsRecord(zoneName string, dnsName string, ipAddress string) error {
@@ -179,8 +180,7 @@ func createDnsRecord(zoneName string, dnsName string, ipAddress string) error {
 	response, err := api.CreateDNSRecord(zoneId, record)
 
 	if err != nil {
-		log.Printf("Error creating DNS record %v", err)
-		return err
+		return fmt.Errorf("error creating DNS record %v", err)
 	}
 
 	log.Printf("Successfully created DNS Record %v", response)
@@ -206,5 +206,3 @@ func setupTestDNS(zoneName string, dnsName string, ipAddress string) error {
 
 	return nil
 }
-
-
