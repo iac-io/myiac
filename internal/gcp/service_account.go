@@ -13,7 +13,7 @@ import (
 type ServiceAccountClient interface {
 	KeyForServiceAccount(saEmail string, recreateKey bool) (string, error)
 	KeyFileForServiceAccount(saEmail string, recreateKey bool, filePath string) error
-	CreateKey(serviceAccountEmail string)
+	CreateKey(serviceAccountEmail string) (string, string, error)
 	ListKeys(serviceAccountEmail string) ([]string, error)
 }
 
@@ -23,13 +23,13 @@ type serviceAccountClient struct {
 }
 
 // NewServiceAccountClient creates a new GCP client for service account key management
-func NewServiceAccountClient(iamClient IamGcpClient, objectStorageCache ObjectStorageCache) *serviceAccountClient {
+func NewServiceAccountClient(iamClient IamGcpClient, objectStorageCache ObjectStorageCache) ServiceAccountClient {
 	return &serviceAccountClient{gcpIamClient: iamClient, objectStorageCache: objectStorageCache}
 }
 
 // NewDefaultServiceAccountClient creates a new GCP client for service account key management based on defaults
 // Authentication against GCP must have already been performed before invoking this operation
-func NewDefaultServiceAccountClient() *serviceAccountClient {
+func NewDefaultServiceAccountClient() ServiceAccountClient {
 	return NewServiceAccountClient(NewDefaultIamClient(), NewDefaultObjectStorageCache())
 }
 

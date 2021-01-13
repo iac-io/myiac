@@ -15,7 +15,7 @@ func TestCreateSecret(t *testing.T) {
 	cmdLine := testutil.FakeKubernetesRunner("test-output")
 	kubernetesRunner := cluster.NewKubernetesRunner(cmdLine)
 	secretManager := NewKubernetesSecretManager("default", kubernetesRunner)
-	fmt.Printf(secretManager.namespace)
+
 	// given
 	filePath := "/tmp/filepath"
 	secretName := "test-secret-name"
@@ -25,7 +25,7 @@ func TestCreateSecret(t *testing.T) {
 	secretManager.CreateFileSecret(secretName, filePath)
 
 	// then
-	//TODO: should validate snake case
+	//TODO: should validate snake case in the secret name (camelCase failures)
 	expectedCreateSecretCmdLine :=
 		fmt.Sprintf("kubectl create secret generic %s "+
 			"--from-file=%s.json=%s -n default", secretName, secretName, filePath)

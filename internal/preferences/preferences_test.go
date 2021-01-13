@@ -2,6 +2,7 @@ package preferences
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"testing"
 
@@ -23,6 +24,7 @@ func setup() {
 }
 
 func teardown() {
+	log.Printf("Cleaning up prefs file")
 	_ = os.Remove(prefsFilename)
 }
 

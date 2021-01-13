@@ -25,13 +25,13 @@ type configPreferences struct {
 	propertiesFile *ini.File
 }
 
-func DefaultConfig() *configPreferences {
+func DefaultConfig() Preferences {
 	homeDir, _ := os.UserHomeDir()
 	prefsFilePath := homeDir + preferencesFile
 	return NewConfig(prefsFilePath)
 }
 
-func NewConfig(prefsFilePath string) *configPreferences {
+func NewConfig(prefsFilePath string) Preferences {
 	var errFile error = nil
 
 	if !util.FileExists(prefsFilePath) {
