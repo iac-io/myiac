@@ -24,7 +24,7 @@ func InstallHelm() {
 		commandline.NewWithWorkingDir("helm", util.StringTemplateToArgsArray("%v %v", "repo", "install"), util.GetHomeDir()).Run()
 	} else {
 		log.Println("Helm already Installed. Updating repos.")
-		commandline.NewWithWorkingDir("helm", util.StringTemplateToArgsArray("%v %v", "list", "-all"),
+		commandline.NewWithWorkingDir("helm", util.StringTemplateToArgsArray("%v %v", "list", "--all"),
 			util.GetHomeDir()).Run()
 	}
 }
