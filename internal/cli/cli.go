@@ -381,6 +381,42 @@ func installHelmCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag
 	}
 }
 
+func setupEnvironmentCmd(providerFlag *cli.StringFlag, projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag, keyPath *cli.StringFlag, dryrRunFlag *cli.BoolFlag) cli.Command {
+
+	return cli.Command{
+		Name:  "setupEnvironment",
+		Usage: "Setup the environment with the cloud provider",
+		Flags: []cli.Flag{
+			providerFlag,
+			projectFlag,
+			environmentFlag,
+			keyPath,
+			dryrRunFlag,
+		},
+		Action: func(c *cli.Context) error {
+			fmt.Printf("Validating flags for setupEnvironment\n")
+			_ = validateBaseFlags(c)
+			_ = validateStringFlagPresence("provider", c)
+			_ = validateStringFlagPresence("env", c)
+			_ = validateStringFlagPresence("project", c)
+			_ = validateStringFlagPresence("keyPath", c)
+
+			providerValue := c.String("provider")
+			project := c.String("project")
+			env := c.String("env")
+			keyLocation := c.String("keyPath")
+			dryrun := c.Bool("dry-run")
+
+			// read these values from config based on project and provider
+			zone := "europe-west2-b"
+			clusterName := project + "-" + env
+			cluster.SetupProvider(providerValue, zone, clusterName, project, keyLocation, dryrun)
+
+			return nil
+		},
+	}
+}
+
 // --- Aux functions ---
 
 func validateBaseFlags(ctx *cli.Context) error {
