@@ -1,13 +1,4 @@
-#FROM golang:1.15-alpine as myiac-builder
-#
-#ADD . /workdir
-#
-#RUN \
-#    cd /workdir && \
-#    go build -o /usr/bin/myiac cmd/myiac/myiac.go
-#
 FROM google/cloud-sdk:alpine
-#COPY --from=myiac-builder /usr/bin/myiac /usr/bin/myiac
 
 ENV TERRAFORM_VERSION=0.12.29 \
     HELM_VERSION=3.1.2 \
@@ -57,4 +48,3 @@ RUN \
     chown -R app:app /home/app
 
 USER app
-#CMD ['/usr/bin/myiac']
