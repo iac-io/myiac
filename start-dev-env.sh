@@ -5,4 +5,4 @@ docker run -ti --rm \
   -v ${PWD}/:/workdir \
   -w /workdir \
   -v ${1}:/account.json \
-  vizlib/myiac:latest zsh
+  myiac:latest zsh
