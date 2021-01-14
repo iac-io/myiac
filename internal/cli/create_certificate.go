@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/iac-io/myiac/internal/cluster"
 	"github.com/iac-io/myiac/internal/secret"
 	"github.com/iac-io/myiac/internal/ssl"
 	"github.com/urfave/cli"
@@ -44,7 +45,7 @@ func createCertCmd() cli.Command {
 
 			log.Printf("Creating certificate for %s from %s - %s \n", domainName, certPath, keyPath)
 
-			ProviderSetup()
+			cluster.ProviderSetup()
 
 			secretManager := secret.CreateKubernetesSecretManager("default")
 			certificate := ssl.NewCertificate(domainName, certPath, keyPath)

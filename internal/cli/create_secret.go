@@ -37,7 +37,7 @@ func createSecretCmd() cli.Command {
 			// for literal secrets
 			literal := c.String("literal")
 
-			ProviderSetup()
+			cluster.ProviderSetup()
 
 			if len(saEmail) > 0 {
 				createSecretForServiceAccount(saEmail, secretName, recreateKey)

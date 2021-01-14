@@ -35,7 +35,7 @@ func BuildCli() {
 	providerFlag := &cli.StringFlag{Name: "provider", Usage: "Select k8s provider (GCP only for now) "}
 
 	keyPath := &cli.StringFlag{Name: "keyPath", Usage: "SA key path"}
-	setupEnvironment := setupEnvironmentCmd(providerFlag, projectFlag, keyPath)
+	setupEnvironment := setupEnvironmentCmd(providerFlag, projectFlag, environmentFlag, keyPath, dryrRunFlag)
 	dockerSetup := dockerSetupCmd(projectFlag, environmentFlag)
 	dockerBuild := dockerBuildCmd(projectFlag)
 
@@ -285,7 +285,7 @@ func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFl
 
 			project := c.String("project")
 			env := c.String("env")
-			dryrunflag := c.Bool("dry-run")
+			dryrun := c.Bool("dry-run")
 			provider := c.String("provider")
 			key := c.String("keyPath")
 
@@ -296,18 +296,9 @@ func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFl
 				gcp.SetKeyEnvVar(key)
 			}
 			//TODO: pass-in variables
-			err := cluster.CreateCluster(project, env, zone, dryrunflag)
+			err := cluster.CreateCluster(provider, project, env, zone, dryrun, key)
 			if err != nil {
 				log.Fatalf("Could not create cluster in project: %v. Error: %v", project, err)
-			}
-			if !dryrunflag {
-				// Set local env kube for local connectivity to new cluster
-				log.Printf("Setting kubectl to work with new cluster: %v", project+"-"+env)
-				SetupProvider(provider, zone, project+"-"+env, project, key, dryrunflag)
-				cluster.InstallHelm()
-			} else {
-				log.Printf("Authenticating only due to --dry-run: %v", project+"-"+env)
-				SetupProvider(provider, zone, project+"-"+env, project, key, dryrunflag)
 			}
 
 			return nil
@@ -375,6 +366,42 @@ func installHelmCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag
 
 			//TODO: Need to botsrap this be full blown go solution. Disabling for now.
 			//cluster.InstallHelm()
+
+			return nil
+		},
+	}
+}
+
+func setupEnvironmentCmd(providerFlag *cli.StringFlag, projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag, keyPath *cli.StringFlag, dryrRunFlag *cli.BoolFlag) cli.Command {
+
+	return cli.Command{
+		Name:  "setupEnvironment",
+		Usage: "Setup the environment with the cloud provider",
+		Flags: []cli.Flag{
+			providerFlag,
+			projectFlag,
+			environmentFlag,
+			keyPath,
+			dryrRunFlag,
+		},
+		Action: func(c *cli.Context) error {
+			fmt.Printf("Validating flags for setupEnvironment\n")
+			_ = validateBaseFlags(c)
+			_ = validateStringFlagPresence("provider", c)
+			_ = validateStringFlagPresence("env", c)
+			_ = validateStringFlagPresence("project", c)
+			_ = validateStringFlagPresence("keyPath", c)
+
+			providerValue := c.String("provider")
+			project := c.String("project")
+			env := c.String("env")
+			keyLocation := c.String("keyPath")
+			dryrun := c.Bool("dry-run")
+
+			// read these values from config based on project and provider
+			zone := "europe-west2-b"
+			clusterName := project + "-" + env
+			cluster.SetupProvider(providerValue, zone, clusterName, project, keyLocation, dryrun)
 
 			return nil
 		},
