@@ -48,25 +48,29 @@ func PlanTerraform(tp string, tf string) {
 	argsArray := util.StringTemplateToArgsArray("%s %s", "plan", "-var-file="+tf)
 	cmd := commandline.NewWithWorkingDir("terraform", argsArray, tp)
 	cmd.Run()
+	log.Printf("Terraform PLAN for %v finished", tf)
 }
 
 func ApplyTerraform(tp string, tf string) {
 	argsArray := util.StringTemplateToArgsArray("%s %s %s", "apply", "-var-file="+tf, "-auto-approve")
 	cmd := commandline.NewWithWorkingDir("terraform", argsArray, tp)
 	cmd.Run()
+	log.Printf("Terraform APPLY for %v finished", tf)
 }
 
 //TODO: pass variables into the TF template/clustervars
-func CreateCluster(project string, env string, zone string, flag bool) error {
+func CreateCluster(provider string, project string, env string, zone string, dryrun bool, key string) error {
 	InitTerraform(tfvarsPath, project, env)
-	if flag {
-		log.Println("Running Plan only due to --dry-run option")
+	if dryrun {
+		log.Printf("Authenticating only due to --dry-run: %v", project+"-"+env)
+		SetupProvider(provider, zone, project+"-"+env, project, key, dryrun)
 		PlanTerraform(tfvarsPath, tfvarsFile)
 	} else {
+		// Set local env kube for local connectivity to new cluster
+		log.Printf("Setting kubectl to work with new cluster: %v", project+"-"+env)
+		SetupProvider(provider, zone, project+"-"+env, project, key, dryrun)
 		ApplyTerraform(tfvarsPath, tfvarsFile)
 	}
-
-	log.Printf("Kubernetes cluster created through Terraform from %s\n", tfvarsPath)
 
 	return nil
 }
