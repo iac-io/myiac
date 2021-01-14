@@ -5,8 +5,6 @@ import (
 	"testing"
 
 	"github.com/iac-io/myiac/internal/commandline"
-	//"github.com/stretchr/testify/assert"
-	//"github.com/stretchr/testify/require"
 )
 
 const ExistingReleasesOutput = `
@@ -50,9 +48,14 @@ const ExistingReleasesOutput = `
 
 // Here we implement the CommandRunner interface with a testing mock
 type mockCommandRunner struct {
-	executable string
-	arguments  []string
-	output     string
+	executable     string
+	arguments      []string
+	output         string
+	suppressOutput bool
+}
+
+func (mcr *mockCommandRunner) SetSuppressOutput(suppressOutput bool) {
+	mcr.suppressOutput = suppressOutput
 }
 
 func (mcr *mockCommandRunner) SetOutput(output string) {

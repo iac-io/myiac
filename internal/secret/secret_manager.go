@@ -3,7 +3,6 @@ package secret
 import (
 	"os"
 
-	"github.com/iac-io/myiac/internal/cluster"
 	"github.com/iac-io/myiac/internal/commandline"
 )
 
@@ -13,6 +12,7 @@ const tlsCertPathTmp = "/tmp/tls.crt"
 type SecretManager interface {
 	CreateTlsSecret(secret TlsSecret)
 	CreateFileSecret(secretName string, filePath string)
+	CreateLiteralSecret(secretName string, literalsMap map[string]string)
 }
 
 type TlsSecret struct {
@@ -31,10 +31,10 @@ func NewTlsSecret(name string, tlsCertPath string, tlsKeyPath string) TlsSecret 
 
 type kubernetesSecretManager struct {
 	namespace        string
-	kubernetesRunner cluster.KubernetesRunner
+	kubernetesRunner KubernetesSecretRunner
 }
 
-func NewKubernetesSecretManager(namespace string, kubernetesRunner cluster.KubernetesRunner) SecretManager {
+func NewKubernetesSecretManager(namespace string, kubernetesRunner KubernetesSecretRunner) SecretManager {
 	return &kubernetesSecretManager{
 		namespace:        namespace,
 		kubernetesRunner: kubernetesRunner,
@@ -42,11 +42,10 @@ func NewKubernetesSecretManager(namespace string, kubernetesRunner cluster.Kuber
 }
 
 func CreateKubernetesSecretManager(namespace string) SecretManager {
-	return NewKubernetesSecretManager(namespace, cluster.NewKubernetesRunner(commandline.NewEmpty()))
+	return NewKubernetesSecretManager(namespace, NewKubernetesRunner(commandline.NewEmpty()))
 }
 
 func (ksm kubernetesSecretManager) CreateTlsSecret(secret TlsSecret) {
-
 	_ = os.Rename(secret.tlsKeyPath, tlsKeyPathTmp)
 	_ = os.Rename(secret.tlsCertPath, tlsCertPathTmp)
 	ksm.kubernetesRunner.CreateTlsSecret(secret.name, ksm.namespace, tlsKeyPathTmp, tlsCertPathTmp)
@@ -58,4 +57,8 @@ func (ksm kubernetesSecretManager) FindTlsSecret(secretName string) {
 
 func (ksm kubernetesSecretManager) CreateFileSecret(secretName string, filePath string) {
 	ksm.kubernetesRunner.CreateFileSecret(secretName, ksm.namespace, filePath)
+}
+
+func (ksm kubernetesSecretManager) CreateLiteralSecret(secretName string, literalsMap map[string]string) {
+	ksm.kubernetesRunner.CreateLiteralSecret(secretName, ksm.namespace, literalsMap)
 }
