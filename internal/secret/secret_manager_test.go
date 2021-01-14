@@ -2,10 +2,10 @@ package secret
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"testing"
 
-	"github.com/iac-io/myiac/internal/cluster"
 	"github.com/iac-io/myiac/testutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -13,13 +13,18 @@ import (
 func TestCreateSecret(t *testing.T) {
 	// setup
 	cmdLine := testutil.FakeKubernetesRunner("test-output")
-	kubernetesRunner := cluster.NewKubernetesRunner(cmdLine)
+	kubernetesRunner := NewKubernetesRunner(cmdLine)
 	secretManager := NewKubernetesSecretManager("default", kubernetesRunner)
+	fmt.Printf(secretManager.namespace)
 
 	// given
 	filePath := "/tmp/filepath"
 	secretName := "test-secret-name"
-	os.Create(filePath)
+	_, err := os.Create(filePath)
+
+	if err != nil {
+		log.Fatalf("error: creating file")
+	}
 
 	// when
 	secretManager.CreateFileSecret(secretName, filePath)

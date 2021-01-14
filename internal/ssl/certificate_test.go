@@ -3,7 +3,7 @@ package ssl
 import (
 	"testing"
 
-	"github.com/iac-io/myiac/internal/cluster"
+	"github.com/iac-io/myiac/internal/commandline"
 	"github.com/iac-io/myiac/internal/secret"
 	"github.com/iac-io/myiac/internal/util"
 	"github.com/iac-io/myiac/testutil"
@@ -14,7 +14,7 @@ func TestCreateTlsCertificate(t *testing.T) {
 	// setup
 	domain := "test-domain"
 	cmdLine := testutil.FakeKubernetesRunner(domain)
-	kubernetesRunner := cluster.NewKubernetesRunner(cmdLine)
+	kubernetesRunner := secret.NewKubernetesRunner(cmdLine)
 	secretManager := secret.NewKubernetesSecretManager("default", kubernetesRunner)
 
 	// given

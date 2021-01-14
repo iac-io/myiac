@@ -2,9 +2,9 @@ package cli
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
-	"github.com/iac-io/myiac/internal/cluster"
 	"github.com/iac-io/myiac/internal/gcp"
 	"github.com/iac-io/myiac/internal/secret"
 	"github.com/urfave/cli"
@@ -43,16 +43,9 @@ func createSecretCmd() cli.Command {
 				createSecretForServiceAccount(saEmail, secretName, recreateKey)
 			} else if len(literal) > 0 {
 				fmt.Printf("Creating secret for literal string\n")
-				literalArr := strings.Split(literal, "=")
-
-				if len(literalArr) >= 2 {
-					//TODO: support multiple literals comma separated
-					//TODO: add this to the kubeSecretManager
-					literalMap := make(map[string]string)
-					literalMap[literalArr[0]] = literalArr[1]
-					cluster.CreateSecretFromLiteral(secretName, "default", literalMap)
-				} else {
-					return fmt.Errorf("error, literal should have key=value pairs")
+				err := createLiteralSecret(secretName, literal)
+				if err != nil {
+					return fmt.Errorf("error creating literal secret %v", err)
 				}
 			} else {
 				return fmt.Errorf("no supported secret type detected")
@@ -63,17 +56,32 @@ func createSecretCmd() cli.Command {
 	}
 }
 
-func createSecretForServiceAccount(saEmail string, secretName string, recreateKey bool) {
-	fmt.Printf("Creating secret for service account %s\n", saEmail)
-
+func createSecretForServiceAccount(saEmail string, secretName string, recreateKey bool) error {
+	log.Printf("Creating secret for service account %s\n", saEmail)
 	saClient := gcp.NewDefaultServiceAccountClient()
 	keyFilePath := fmt.Sprintf("/tmp/%s", secretName)
 	err := saClient.KeyFileForServiceAccount(saEmail, recreateKey, keyFilePath)
 
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("error creating key for email %s", err)
 	}
 
 	kubeSecretManager := secret.CreateKubernetesSecretManager("default")
 	kubeSecretManager.CreateFileSecret(secretName, keyFilePath)
+
+	return nil
+}
+
+func createLiteralSecret(secretName string, literal string) error {
+	literalArr := strings.Split(literal, "=")
+	if len(literalArr) >= 2 {
+		//TODO: support multiple literals comma separated
+		literalMap := make(map[string]string)
+		literalMap[literalArr[0]] = literalArr[1]
+		kubeSecretManager := secret.CreateKubernetesSecretManager("default")
+		kubeSecretManager.CreateLiteralSecret(secretName, literalMap)
+		return nil
+	} else {
+		return fmt.Errorf("error, literal should have key=value pairs")
+	}
 }
