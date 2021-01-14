@@ -11,13 +11,14 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	setup()
 	code := m.Run()
 	shutdown()
 	os.Exit(code)
 }
 
 func setup() {
-
+	deleteZone("test.net")
 }
 
 func shutdown() {

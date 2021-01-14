@@ -2,7 +2,7 @@ package secret
 
 import (
 	"os"
-	"github.com/iac-io/myiac/internal/secret"
+
 	"github.com/iac-io/myiac/internal/commandline"
 )
 
@@ -12,6 +12,7 @@ const tlsCertPathTmp = "/tmp/tls.crt"
 type SecretManager interface {
 	CreateTlsSecret(secret TlsSecret)
 	CreateFileSecret(secretName string, filePath string)
+	CreateLiteralSecret(secretName string, literalsMap map[string]string)
 }
 
 type TlsSecret struct {
@@ -33,7 +34,7 @@ type kubernetesSecretManager struct {
 	kubernetesRunner KubernetesSecretRunner
 }
 
-func NewKubernetesSecretManager(namespace string, kubernetesRunner secret.KubernetesRunner) SecretManager {
+func NewKubernetesSecretManager(namespace string, kubernetesRunner KubernetesSecretRunner) SecretManager {
 	return &kubernetesSecretManager{
 		namespace:        namespace,
 		kubernetesRunner: kubernetesRunner,
@@ -41,7 +42,7 @@ func NewKubernetesSecretManager(namespace string, kubernetesRunner secret.Kubern
 }
 
 func CreateKubernetesSecretManager(namespace string) SecretManager {
-	return NewKubernetesSecretManager(namespace, secret.NewKubernetesRunner(commandline.NewEmpty()))
+	return NewKubernetesSecretManager(namespace, NewKubernetesRunner(commandline.NewEmpty()))
 }
 
 func (ksm kubernetesSecretManager) CreateTlsSecret(secret TlsSecret) {

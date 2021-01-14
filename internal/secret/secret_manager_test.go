@@ -15,7 +15,6 @@ func TestCreateSecret(t *testing.T) {
 	cmdLine := testutil.FakeKubernetesRunner("test-output")
 	kubernetesRunner := NewKubernetesRunner(cmdLine)
 	secretManager := NewKubernetesSecretManager("default", kubernetesRunner)
-	fmt.Printf(secretManager.namespace)
 
 	// given
 	filePath := "/tmp/filepath"

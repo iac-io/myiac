@@ -73,14 +73,14 @@ func (kr kubernetesRunner) CreateLiteralSecret(name string, namespace string, li
 	fromLiteralArg = strings.TrimSpace(fromLiteralArg)
 	argsArray := []string{"create", "secret", "generic", name, fromLiteralArg, "-n", namespace}
 	cmd := commandline.New("kubectl", argsArray)
-	cmd.IsSuppressOutput = true
+	cmd.SetSuppressOutput(true)
 	cmd.Run()
 }
 
 func deleteSecret(name string, namespace string) {
 	argsArray := []string{"delete", "secret", name, "-n", namespace}
 	cmd := commandline.New("kubectl", argsArray)
-	cmd.IsSuppressOutput = true
+	cmd.SetSuppressOutput(true)
 	cmd.IgnoreError(true)
 	cmd.Run()
 }
