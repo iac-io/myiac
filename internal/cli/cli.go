@@ -303,8 +303,11 @@ func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFl
 			if !dryrunflag {
 				// Set local env kube for local connectivity to new cluster
 				log.Printf("Setting kubectl to work with new cluster: %v", project+"-"+env)
-				SetupProvider(provider, zone, project+"-"+env, project, key)
+				SetupProvider(provider, zone, project+"-"+env, project, key, dryrunflag)
 				cluster.InstallHelm()
+			} else {
+				log.Printf("Authenticating only due to --dry-run: %v", project+"-"+env)
+				SetupProvider(provider, zone, project+"-"+env, project, key, dryrunflag)
 			}
 
 			return nil

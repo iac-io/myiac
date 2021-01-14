@@ -1,16 +1,8 @@
-FROM golang:1.15-alpine as myiac-builder
-
-ADD . /workdir
-
-RUN \
-    cd /workdir && \
-    go build -o /usr/bin/myiac cmd/myiac/myiac.go
-
 FROM google/cloud-sdk:alpine
-COPY --from=myiac-builder /usr/bin/myiac /usr/bin/myiac
 
 ENV TERRAFORM_VERSION=0.12.29 \
-    HELM_VERSION=3.1.2
+    HELM_VERSION=3.1.2 \
+    GOPATH="/home/app/go"
 
 RUN \
     apk --update add \
@@ -24,7 +16,9 @@ RUN \
         unzip \
         wget \
         util-linux \
-        vim && \
+        vim \
+        zsh \
+        go && \
     gcloud components install kubectl && \
     cd /tmp && \
     wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip && \
@@ -35,9 +29,22 @@ RUN \
     mv linux-amd64/helm /usr/bin && \
     rm -f helm-v${HELM_VERSION}-linux-amd64.tar.gz && \
     addgroup -S app && adduser -S app -G app -h /home/app && \
-    chown app:app /usr/bin/myiac && \
+    chown -R app:app /home/app && \
     rm -rf /tmp/* /var/tmp/* /var/cache/apk/* /var/cache/distfiles/*
 
 USER app
 
-CMD ['/usr/bin/myiac']
+RUN \
+    sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" && \
+    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k && \
+    mkdir -p /home/app/.cache && \
+    mkdir -p /home/app/go
+
+ADD container-files /
+
+USER root
+
+RUN \
+    chown -R app:app /home/app
+
+USER app
