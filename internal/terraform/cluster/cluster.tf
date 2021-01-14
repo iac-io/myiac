@@ -4,8 +4,7 @@ locals {
   network_cidr            = "10.254.0.0/16"
 
   cluster_name            = "${var.project}-${var.environment}"
-  applications_pool_name  = "${var.project}-${var.environment}-applications-pool"
-  elasticsearch_pool_name = "${var.project}-${var.environment}-elasticsearch-pool"
+  applications_pool_name  = "default-pool"
 }
 
 provider "google" {
@@ -13,6 +12,7 @@ provider "google" {
   region      = var.cluster_zone
 }
 
+//TODO: Find a way to pass those on run.
 terraform {
   backend "gcs" {
     bucket = "ozzy-playground-tfstate-dev"
@@ -34,8 +34,8 @@ resource "google_container_cluster" "cluster" {
   location = var.cluster_zone
   network  = google_compute_network.gke_network.self_link
   subnetwork = google_compute_subnetwork.gke_subnet.self_link
-  min_master_version = "1.17.14-gke.1600"
-  node_version = "1.17.14-gke.1600"
+  min_master_version = var.k8s_master_version
+  node_version = var.k8s_node_pool_version
 
   remove_default_node_pool = true
   logging_service          = "logging.googleapis.com/kubernetes"
@@ -91,43 +91,7 @@ resource "google_container_node_pool" "applications_node_pool" {
   }
 }
 
-//resource "google_container_node_pool" "elasticsearch_node_pool" {
-//  provider           = google
-//  project            = var.project
-//  name               = local.elasticsearch_pool_name
-//  location           = google_container_cluster.cluster.location
-//  cluster            = google_container_cluster.cluster.name
-//  initial_node_count = 1
-//
-//  management {
-//    auto_repair  = true
-//    auto_upgrade = true
-//  }
-//
-//  autoscaling {
-//    # Minimum number of nodes in the NodePool. Must be >=0 and <= max_node_count.
-//    min_node_count = 1
-//
-//    # Maximum number of nodes in the NodePool. Must be >= min_node_count.
-//    max_node_count = var.elasticsearch_max_node_count
-//  }
-//
-//  node_config {
-//    preemptible  = true
-//    machine_type = var.elasticsearch_machine_type
-//    disk_size_gb = 20
-//
-//    oauth_scopes = [
-//      "https://www.googleapis.com/auth/compute",
-//      "https://www.googleapis.com/auth/devstorage.read_only",
-//      "https://www.googleapis.com/auth/logging.write",
-//      "https://www.googleapis.com/auth/monitoring",
-//    ]
-//  }
-//}
-
 # Firewall rule for NodePort
-
 resource "google_compute_subnetwork" "gke_subnet" {
   project       = var.project
   name          = "${var.project}-${var.environment}-gke-subnet"

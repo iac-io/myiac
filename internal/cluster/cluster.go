@@ -62,13 +62,8 @@ func ApplyTerraform(tp string, tf string) {
 func CreateCluster(provider string, project string, env string, zone string, dryrun bool, key string) error {
 	InitTerraform(tfvarsPath, project, env)
 	if dryrun {
-		log.Printf("Authenticating only due to --dry-run: %v", project+"-"+env)
-		SetupProvider(provider, zone, project+"-"+env, project, key, dryrun)
 		PlanTerraform(tfvarsPath, tfvarsFile)
 	} else {
-		// Set local env kube for local connectivity to new cluster
-		log.Printf("Setting kubectl to work with new cluster: %v", project+"-"+env)
-		SetupProvider(provider, zone, project+"-"+env, project, key, dryrun)
 		ApplyTerraform(tfvarsPath, tfvarsFile)
 	}
 
