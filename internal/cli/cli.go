@@ -56,6 +56,8 @@ func BuildCli() {
 	cryptCmd := cryptCmd(projectFlag)
 	createCertCmd := createCertCmd()
 
+	updateDnsFromClusterIps := updateDnsFromClusterIpsCmd()
+
 	app.Commands = []cli.Command{
 		setupEnvironment,
 		dockerSetup,
@@ -69,6 +71,7 @@ func BuildCli() {
 		cryptCmd,
 		createCertCmd,
 		resizePoolCmd,
+		updateDnsFromClusterIps,
 	}
 
 	err := app.Run(os.Args)
@@ -316,7 +319,9 @@ func deployAppSetup(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag
 			fmt.Printf("Properties for deployment: %s\n", c.String("properties"))
 			propertiesMap := readPropertiesToMap(c.String("properties"))
 			dryRun := c.Bool("dryRun")
-			deploy.Deploy(appToDeploy, env, propertiesMap, dryRun)
+
+			deployer := deploy.NewDeployer()
+			deployer.Deploy(appToDeploy, env, propertiesMap, dryRun)
 			return nil
 		},
 	}

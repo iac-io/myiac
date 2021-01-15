@@ -15,7 +15,7 @@ func createSecretCmd() cli.Command {
 	secretNameFlag := &cli.StringFlag{Name: "secretName", Usage: "The name of the secret to be created in K8s"}
 	saEmailFlag := &cli.StringFlag{Name: "saEmail", Usage: "The service account email whose key will be associated to the secret"}
 	recreateKeyFlag := &cli.BoolFlag{Name: "recreateSaKey", Usage: "Whether or not it should recreate the SA key"}
-	literalStringFlag := &cli.StringFlag{Name: "literal", Usage: "String to encode as secret, in plain text"}
+	literalStringFlag := &cli.StringFlag{Name: "literal", Usage: "Key=value pair to be encoded in the secret (i.e. --literal key=value"}
 
 	return cli.Command{
 		Name:  "createSecret",
@@ -43,7 +43,7 @@ func createSecretCmd() cli.Command {
 			if len(saEmail) > 0 {
 				createSecretForServiceAccount(saEmail, secretName, recreateKey)
 			} else if len(literal) > 0 {
-				fmt.Printf("Creating secret for literal string\n")
+				fmt.Printf("Creating secret from literal key=value string\n")
 				err := createLiteralSecret(secretName, literal)
 				if err != nil {
 					return fmt.Errorf("error creating literal secret %v", err)
@@ -74,15 +74,27 @@ func createSecretForServiceAccount(saEmail string, secretName string, recreateKe
 }
 
 func createLiteralSecret(secretName string, literal string) error {
-	literalArr := strings.Split(literal, "=")
-	if len(literalArr) >= 2 {
+	if isSingleKeyValuePair(literal) {
 		//TODO: support multiple literals comma separated
-		literalMap := make(map[string]string)
-		literalMap[literalArr[0]] = literalArr[1]
+		literalMap := keyValuePairToMap(literal)
 		kubeSecretManager := secret.CreateKubernetesSecretManager("default")
+		log.Printf("Creating literal secret with name %s", secretName)
 		kubeSecretManager.CreateLiteralSecret(secretName, literalMap)
+		log.Printf("Secret %s correctly created", secretName)
 		return nil
 	} else {
 		return fmt.Errorf("error, literal should have key=value pairs")
 	}
+}
+
+func isSingleKeyValuePair(literal string) bool {
+	literalArr := strings.Split(literal, "=")
+	return len(literalArr) == 2
+}
+
+func keyValuePairToMap(keyValuePair string) map[string]string {
+	literalArr := strings.Split(keyValuePair, "=")
+	literalMap := make(map[string]string)
+	literalMap[literalArr[0]] = literalArr[1]
+	return literalMap
 }

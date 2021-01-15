@@ -8,6 +8,8 @@ import (
 	"github.com/iac-io/myiac/internal/util"
 )
 
+const externalIpsKeyName = "externalIps"
+
 func GetInternalIpsForNodes() []string {
 	json := executeGetIpsCmd()
 	ips := getAllIps(json, true)
@@ -20,13 +22,6 @@ func GetAllPublicIps() []string {
 	ips := getAllIps(json, false)
 	fmt.Printf("Public IPs for nodes in cluster are: %v\n", ips)
 	return ips
-}
-
-func GetPods() {
-	baseArgs := "get pods"
-	var argsArray []string = strings.Fields(baseArgs)
-	cmd := commandline.New("kubectl", argsArray)
-	cmd.Run()
 }
 
 func executeGetIpsCmd() map[string]interface{} {
@@ -53,4 +48,14 @@ func getAllIps(json map[string]interface{}, internal bool) []string {
 		ips = append(ips, ip)
 	}
 	return ips
+}
+
+func getNodesInternalIpsAsHelmParams(internalIps []string) map[string]string {
+	helmSetParams := make(map[string]string)
+	//internalIps := cluster.GetInternalIpsForNodes()
+
+	// very flaky --set for ips like this: --set externalIps={ip1\,ip2\,ip3}
+	internalIpsForHelmSet := "{" + strings.Join(internalIps, "\\,") + "}"
+	helmSetParams[externalIpsKeyName] = internalIpsForHelmSet
+	return helmSetParams
 }
