@@ -2,7 +2,8 @@ FROM google/cloud-sdk:alpine
 
 ENV TERRAFORM_VERSION=0.12.29 \
     HELM_VERSION=3.1.2 \
-    GOPATH="/home/app/go"
+    GOPATH="/home/app/go" \
+    KUBE_PROMPT_VERSION=1.0.10
 
 RUN \
     apk --update add \
@@ -18,7 +19,9 @@ RUN \
         util-linux \
         vim \
         zsh \
-        go && \
+        go \
+        busybox-extras \
+        mtr && \
     gcloud components install kubectl && \
     cd /tmp && \
     wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip && \
@@ -30,7 +33,12 @@ RUN \
     rm -f helm-v${HELM_VERSION}-linux-amd64.tar.gz && \
     addgroup -S app && adduser -S app -G app -h /home/app && \
     chown -R app:app /home/app && \
-    rm -rf /tmp/* /var/tmp/* /var/cache/apk/* /var/cache/distfiles/*
+    rm -rf /tmp/* /var/tmp/* /var/cache/apk/* /var/cache/distfiles/* && \
+    wget https://github.com/c-bata/kube-prompt/releases/download/v${KUBE_PROMPT_VERSION}/kube-prompt_v${KUBE_PROMPT_VERSION}_linux_amd64.zip && \
+    unzip kube-prompt_v${KUBE_PROMPT_VERSION}_linux_amd64.zip && \
+    rm -f kube-prompt_v${KUBE_PROMPT_VERSION}_linux_amd64.zip && \
+    chmod +x kube-prompt && \
+    mv ./kube-prompt /usr/local/bin/kube-prompt
 
 USER app
 
