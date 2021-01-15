@@ -2,6 +2,11 @@ package gcp
 
 import (
 	"fmt"
+	"strings"
+
+	"github.com/iac-io/myiac/services"
+
+	"github.com/iac-io/myiac/internal/cloudflare"
 
 	"github.com/rs/zerolog/log"
 	"golang.org/x/net/context"
@@ -9,11 +14,67 @@ import (
 	"google.golang.org/api/dns/v1"
 )
 
+const (
+	dnsProviderGcp        = "gcp"
+	dnsProviderCloudflare = "cloudflare"
+)
+
+type DNSService interface {
+	UpsertDNSEntry(dnsName string, ipAddress string) error
+}
+
+type DNSChangeRequest interface {
+	DNSProvider() string
+	DomainName() string
+}
+
+type dnsChangeRequest struct {
+	dnsProvider string
+	domainName  string
+}
+
+func NewDNSChangeRequest(dnsProvider string, domainName string, serviceName string) (DNSChangeRequest, error) {
+	if (dnsProvider != dnsProviderGcp) && (dnsProvider != dnsProviderCloudflare) {
+		return nil, fmt.Errorf("error: unknown dns provider %s", dnsProvider)
+	}
+	serviceProps := services.NewServiceProps(serviceName)
+	if !strings.HasSuffix(domainName, serviceProps.ClusterDomainName) {
+		return nil, fmt.Errorf("error: domain name not supported %s", domainName)
+	}
+
+	return &dnsChangeRequest{domainName: domainName, dnsProvider: dnsProvider}, nil
+}
+
+func (dcr dnsChangeRequest) DomainName() string {
+	return dcr.domainName
+}
+
+func (dcr dnsChangeRequest) DNSProvider() string {
+	return dcr.dnsProvider
+}
+
 // GoogleCloudDNSService is the service that allows to create or update dns records
 type GoogleCloudDNSService struct {
 	service *dns.Service
 	project string
 	zone    string
+}
+
+func NewDNSService(dnsProvider string, serviceName string) (DNSService, error) {
+	props := services.NewServiceProps(serviceName)
+	if dnsProvider == dnsProviderGcp {
+		log.Printf("Setting up GCP DNS provider")
+		return NewGoogleCloudDNSService(props.GcpProjectId, props.GkeClusterZone), nil
+	} else if dnsProvider == dnsProviderCloudflare {
+		log.Printf("Setting up cloudflare DNS provider %s", props.CloudflareZone)
+		service, err := cloudflare.NewFromEnv(props.CloudflareZone)
+		if err != nil {
+			return nil, err
+		}
+		return service, nil
+	} else {
+		return nil, fmt.Errorf("error: DNS provider not recognised %s", dnsProvider)
+	}
 }
 
 // NewGoogleCloudDNSService Creates a GCP cloud dns service
@@ -99,5 +160,9 @@ func (dnsService *GoogleCloudDNSService) UpsertDNSRecord(dnsRecordType, dnsRecor
 
 	log.Info().Interface("response", resp).Msgf("Response from google cloud dns api")
 
-	return
+	return nil
+}
+
+func (dnsService *GoogleCloudDNSService) UpsertDNSEntry(dnsName string, ipAddress string) error {
+	return dnsService.UpsertDNSRecord("A", dnsName, ipAddress)
 }

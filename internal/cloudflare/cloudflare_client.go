@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/cloudflare/cloudflare-go"
 )
@@ -20,6 +21,7 @@ type CfClient interface {
 	UpdateDNS(dnsName string, ipAddress string) error
 	CreateDNS(dnsName string, ipAddress string) error
 	DataForDNS(dnsName string) (string, error)
+	UpsertDNSEntry(dnsName string, ipAddress string) error
 }
 
 type cfClient struct {
@@ -58,10 +60,15 @@ func (cc cfClient) UpdateDNS(dnsName string, ipAddress string) error {
 		return fmt.Errorf("cannot read DNS records %s", err)
 	}
 
+	var subdomain = dnsName
+	if !strings.HasSuffix(dnsName, zoneName) {
+		subdomain = dnsName + "." + zoneName
+	}
+
 	var recordId = ""
 	for _, r := range records {
 		fmt.Printf("%s: %s -> %s\n", r.Name, r.ID, r.Content)
-		if r.Name == dnsName+"."+zoneName {
+		if r.Name == subdomain {
 			recordId = r.ID
 		}
 	}
@@ -72,6 +79,9 @@ func (cc cfClient) UpdateDNS(dnsName string, ipAddress string) error {
 
 	dnsRecord, _ := cc.cfApi.DNSRecord(zoneId, recordId)
 	dnsRecord.Content = ipAddress
+	dnsRecord.Proxied = true
+
+	log.Printf("About to update DNS record  %s  with %s", subdomain, ipAddress)
 	err = cc.cfApi.UpdateDNSRecord(zoneId, recordId, dnsRecord)
 
 	if err != nil {
@@ -89,7 +99,7 @@ func (cc cfClient) CreateDNS(dnsName string, ipAddress string) error {
 		return fmt.Errorf("error getting Zone ID by Name %s: %s", zoneId, err)
 	}
 
-	record := cloudflare.DNSRecord{Name: dnsName, Type: "A", Content: ipAddress, TTL: 300}
+	record := cloudflare.DNSRecord{Name: dnsName, Type: "A", Content: ipAddress, TTL: 300, Proxied: true}
 	response, err := cc.cfApi.CreateDNSRecord(zoneId, record)
 
 	if err != nil {
@@ -114,10 +124,17 @@ func (cc cfClient) DataForDNS(dnsName string) (string, error) {
 		return "", fmt.Errorf("cannot read DNS records %s", err)
 	}
 
+	var subdomain = dnsName
+	if !strings.HasSuffix(dnsName, zoneName) {
+		subdomain = dnsName + "." + zoneName
+	}
+
 	var recordId = ""
+	log.Printf("Checking record for subdomain: %s", subdomain)
 	for _, r := range records {
 		fmt.Printf("%s: %s -> %s\n", r.Name, r.ID, r.Content)
-		if r.Name == dnsName+"."+zoneName {
+		if r.Name == subdomain {
+			log.Printf("Found record name %s for %s, recordId: %s", r.Name, subdomain, r.ID)
 			recordId = r.ID
 		}
 	}
@@ -132,4 +149,33 @@ func (cc cfClient) DataForDNS(dnsName string) (string, error) {
 	log.Printf("Content of DNS record %s", dnsRecord.Content)
 
 	return dnsRecord.Content, nil
+}
+
+func (cc cfClient) UpsertDNSEntry(dnsName string, ipAddress string) error {
+
+	dataForDns, err := cc.DataForDNS(dnsName)
+
+	if err != nil {
+		errStr := fmt.Sprintf("%s", err)
+		if strings.Contains(errStr, "not found") {
+			if errDns := cc.CreateDNS(dnsName, ipAddress); errDns != nil {
+				return errDns
+			}
+		} else {
+			return err
+		}
+	}
+
+	if dataForDns == "" {
+		if errDns := cc.CreateDNS(dnsName, ipAddress); errDns != nil {
+			return errDns
+		}
+	}
+
+	// update
+	if err = cc.UpdateDNS(dnsName, ipAddress); err != nil {
+		return err
+	}
+
+	return nil
 }

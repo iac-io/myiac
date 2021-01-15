@@ -98,3 +98,16 @@ func ValidateTFVars(tfPath string) (string, string) {
 		return tfvarsPath, tfvarsFile
 	}
 }
+//FIXME: To be removed when new node termination flow is in place
+
+func changeDevDNS() {
+	publicIps := GetAllPublicIps()
+	aPublicIP := publicIps[0] // any public ip works for this as it's clusterIP
+	applyDNSThroughSdk(aPublicIP)
+}
+
+func applyDNSThroughSdk(newIP string) {
+	fmt.Printf("Applying changes to DNS for new IP: %s", newIP)
+	dnsService := gcp.NewGoogleCloudDNSService("moneycol", "money-zone-free")
+	dnsService.UpsertDNSRecord("A", "dev.moneycol.ml", newIP)
+}

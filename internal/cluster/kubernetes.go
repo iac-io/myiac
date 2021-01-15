@@ -22,13 +22,6 @@ func GetAllPublicIps() []string {
 	return ips
 }
 
-func GetPods() {
-	baseArgs := "get pods"
-	var argsArray []string = strings.Fields(baseArgs)
-	cmd := commandline.New("kubectl", argsArray)
-	cmd.Run()
-}
-
 func executeGetIpsCmd() map[string]interface{} {
 	argsArray := []string{"get", "nodes", "-o", "json"}
 	cmd := commandline.New("kubectl", argsArray)
@@ -53,4 +46,14 @@ func getAllIps(json map[string]interface{}, internal bool) []string {
 		ips = append(ips, ip)
 	}
 	return ips
+}
+
+func getNodesInternalIpsAsHelmParams(internalIps []string) map[string]string {
+	helmSetParams := make(map[string]string)
+	//internalIps := cluster.GetInternalIpsForNodes()
+
+	// very flaky --set for ips like this: --set externalIps={ip1\,ip2\,ip3}
+	internalIpsForHelmSet := "{" + strings.Join(internalIps, "\\,") + "}"
+	helmSetParams["externalIps"] = internalIpsForHelmSet
+	return helmSetParams
 }

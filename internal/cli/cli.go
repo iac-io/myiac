@@ -30,6 +30,7 @@ func BuildCli() {
 
 	environmentFlag := &cli.StringFlag{Name: "env, e", Usage: "The environment to refer to (dev,prod)"}
 	projectFlag := &cli.StringFlag{Name: "project, p", Usage: "The project to refer to (projects folder manifests)"}
+	zoneFlag := &cli.StringFlag{Name: "zone, z", Usage: "The zone of a GKE cluster (i.e. europe-west1-b)"}
 	propertiesFlag := &cli.StringFlag{Name: "properties", Usage: "Properties for deployments"}
 	dryRunFlag := &cli.BoolFlag{Name: "dry-run", Usage: "Dry Run"}
 	providerFlag := &cli.StringFlag{Name: "provider", Usage: "Select k8s provider (GCP only for now) "}
@@ -56,6 +57,8 @@ func BuildCli() {
 	cryptCmd := cryptCmd(projectFlag)
 	createCertCmd := createCertCmd()
 
+	updateDnsFromClusterIps := updateDnsFromClusterIpsCmd()
+
 	app.Commands = []cli.Command{
 		setupEnvironment,
 		dockerSetup,
@@ -69,6 +72,7 @@ func BuildCli() {
 		cryptCmd,
 		createCertCmd,
 		resizePoolCmd,
+		updateDnsFromClusterIps,
 	}
 
 	err := app.Run(os.Args)
@@ -316,7 +320,9 @@ func deployAppSetup(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag
 			fmt.Printf("Properties for deployment: %s\n", c.String("properties"))
 			propertiesMap := readPropertiesToMap(c.String("properties"))
 			dryRun := c.Bool("dryRun")
-			deploy.Deploy(appToDeploy, env, propertiesMap, dryRun)
+
+			deployer := deploy.NewDeployer()
+			deployer.Deploy(appToDeploy, env, propertiesMap, dryRun)
 			return nil
 		},
 	}
@@ -460,10 +466,13 @@ func setupEnvironmentCmd(providerFlag *cli.StringFlag, projectFlag *cli.StringFl
 			_ = validateStringFlagPresence("keyPath", c)
 			_ = validateStringFlagPresence("zone", c)
 
+			// should read most of these values from config based on project and provider
 			providerValue := c.String("provider")
 			project := c.String("project")
 			env := c.String("env")
 			keyLocation := c.String("keyPath")
+			zone := "europe-west2-b"
+
 			dryrun := c.Bool("dry-run")
 			zone := c.String("zone")
 
