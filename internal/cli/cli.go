@@ -35,13 +35,14 @@ func BuildCli() {
 	providerFlag := &cli.StringFlag{Name: "provider", Usage: "Select k8s provider (GCP only for now) "}
 
 	keyPath := &cli.StringFlag{Name: "keyPath", Usage: "SA key path"}
+	tfConfigPath := &cli.StringFlag{Name: "tfConfigPath", Usage: "Terraform Configuration Directory Path"}
 	setupEnvironment := setupEnvironmentCmd(providerFlag, projectFlag, environmentFlag, keyPath, dryrRunFlag)
 	dockerSetup := dockerSetupCmd(projectFlag, environmentFlag)
 	dockerBuild := dockerBuildCmd(projectFlag)
 
-	createClusterCmd := createClusterCmd(projectFlag, environmentFlag, dryrRunFlag, providerFlag, keyPath)
+	createClusterCmd := createClusterCmd(projectFlag, environmentFlag, dryrRunFlag, providerFlag, keyPath, tfConfigPath)
 	installHelmCmd := installHelmCmd(projectFlag, environmentFlag)
-	destroyClusterCmd := destroyClusterCmd(projectFlag, environmentFlag, providerFlag, keyPath)
+	destroyClusterCmd := destroyClusterCmd(projectFlag, environmentFlag, providerFlag, keyPath, tfConfigPath)
 
 	deployApp := deployAppSetup(projectFlag, environmentFlag, propertiesFlag)
 	resizeClusterCmd := resizeClusterCmd(projectFlag, environmentFlag)
@@ -264,7 +265,7 @@ func deployAppSetup(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag
 }
 
 func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag,
-	dryrRunFlag *cli.BoolFlag, providerFlag *cli.StringFlag, keyPath *cli.StringFlag) cli.Command {
+	dryrRunFlag *cli.BoolFlag, providerFlag *cli.StringFlag, keyPath *cli.StringFlag, tfConfigPath *cli.StringFlag) cli.Command {
 	return cli.Command{
 		Name:  "createCluster",
 		Usage: "Create a Kubernetes cluster through Terraform",
@@ -274,6 +275,7 @@ func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFl
 			dryrRunFlag,
 			providerFlag,
 			keyPath,
+			tfConfigPath,
 		},
 		Action: func(c *cli.Context) error {
 			fmt.Printf("Validating flags for createCluster\n")
@@ -288,6 +290,7 @@ func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFl
 			dryrun := c.Bool("dry-run")
 			provider := c.String("provider")
 			key := c.String("keyPath")
+			tfConfigPath := c.String("tfConfigPath")
 
 			//TODO: read from project manifest
 			zone := "europe-west2-b"
@@ -296,7 +299,7 @@ func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFl
 				gcp.SetKeyEnvVar(key)
 			}
 			//TODO: pass-in variables
-			err := cluster.CreateCluster(provider, project, env, zone, dryrun, key)
+			err := cluster.CreateCluster(provider, project, env, zone, dryrun, key, tfConfigPath)
 			if err != nil {
 				log.Fatalf("Could not create cluster in project: %v. Error: %v", project, err)
 			}
@@ -307,7 +310,8 @@ func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFl
 	}
 }
 
-func destroyClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag, providerFlag *cli.StringFlag, keyPath *cli.StringFlag) cli.Command {
+func destroyClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag, providerFlag *cli.StringFlag,
+	keyPath *cli.StringFlag, tfConfigPath *cli.StringFlag) cli.Command {
 	return cli.Command{
 		Name:  "destroyCluster",
 		Usage: "Destroy an existing Kubernetes cluster created previously through Terraform",
@@ -316,6 +320,7 @@ func destroyClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringF
 			environmentFlag,
 			providerFlag,
 			keyPath,
+			tfConfigPath,
 		},
 		Action: func(c *cli.Context) error {
 			fmt.Printf("Validating flags for destroyCluster\n")
@@ -329,6 +334,7 @@ func destroyClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringF
 			env := c.String("env")
 			provider := c.String("provider")
 			keyPath := c.String("keyPath")
+			tfConfigPath := c.String("tfConfigPath")
 
 			//TODO: read from project manifest
 			zone := "europe-west2-b"
@@ -338,7 +344,7 @@ func destroyClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringF
 				gcp.SetKeyEnvVar(keyPath)
 			}
 
-			cluster.DestroyCluster(project, env, zone)
+			cluster.DestroyCluster(project, env, zone, tfConfigPath)
 			return nil
 		},
 	}
