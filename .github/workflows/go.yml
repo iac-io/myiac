@@ -24,5 +24,7 @@ jobs:
       - name: Test cli
         run: ./myiac --help | grep "Infrastructure as code"
 
-#      - name: GO test
-#        run: go test ./...
+      - name: GO test
+        run: |
+          go test ./...  -coverprofile=test.out
+          go tool cover -func=test.out
