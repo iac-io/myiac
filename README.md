@@ -1,5 +1,7 @@
 # MyIAC
 
+![Build](https://github.com/iac-io/myiac/workflows/Build%20MyIaC/badge.svg?branch=master)
+
 Infrastructure as code. GCP for now.
 
 ## Setup
