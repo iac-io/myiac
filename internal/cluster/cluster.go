@@ -54,8 +54,7 @@ func ApplyTerraform(tp string, tf string) {
 }
 
 //TODO: pass variables into the TF template/clustervars
-func CreateCluster(provider string, project string, env string, zone string, dryrun bool, key string,
-	tfConfigPath string) error {
+func CreateCluster(project string, env string, dryrun bool, tfConfigPath string) error {
 	tfvarsPath, tfvarsFile := ValidateTFVars(tfConfigPath)
 	InitTerraform(tfConfigPath, project, env)
 	if dryrun {
@@ -67,7 +66,7 @@ func CreateCluster(provider string, project string, env string, zone string, dry
 	return nil
 }
 
-func DestroyCluster(project string, env string, zone string, tfConfigPath string) {
+func DestroyCluster(project string, env string, tfConfigPath string) {
 	tfvarsPath, tfvarsFile := ValidateTFVars(tfConfigPath)
 	InitTerraform(tfvarsPath, project, env)
 	log.Println("Waiting 5 seconds before destroying cluster...")
@@ -84,7 +83,8 @@ func DestroyCluster(project string, env string, zone string, tfConfigPath string
 	//}
 }
 
-//Misc functions
+// --- Aux functions ---
+
 func ValidateTFVars(tfPath string) (string, string) {
 	if _, err := os.Stat(tfPath); os.IsNotExist(err) {
 		log.Println("Running Terraform against default configuration")

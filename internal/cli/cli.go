@@ -36,11 +36,14 @@ func BuildCli() {
 
 	keyPath := &cli.StringFlag{Name: "keyPath", Usage: "SA key path"}
 	tfConfigPath := &cli.StringFlag{Name: "tfConfigPath", Usage: "Terraform Configuration Directory Path"}
-	setupEnvironment := setupEnvironmentCmd(providerFlag, projectFlag, environmentFlag, keyPath, dryrRunFlag)
+	zone := &cli.StringFlag{Name: "zone", Usage: "Select Zone: example europe-west2-b"}
+
+	setupEnvironment := setupEnvironmentCmd(providerFlag, projectFlag, environmentFlag, keyPath, dryrRunFlag, zone)
 	dockerSetup := dockerSetupCmd(projectFlag, environmentFlag)
 	dockerBuild := dockerBuildCmd(projectFlag)
 
-	createClusterCmd := createClusterCmd(projectFlag, environmentFlag, dryrRunFlag, providerFlag, keyPath, tfConfigPath)
+	createClusterCmd := createClusterCmd(projectFlag, environmentFlag, dryrRunFlag, providerFlag, keyPath,
+		tfConfigPath)
 	installHelmCmd := installHelmCmd(projectFlag, environmentFlag)
 	destroyClusterCmd := destroyClusterCmd(projectFlag, environmentFlag, providerFlag, keyPath, tfConfigPath)
 
@@ -292,14 +295,12 @@ func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFl
 			key := c.String("keyPath")
 			tfConfigPath := c.String("tfConfigPath")
 
-			//TODO: read from project manifest
-			zone := "europe-west2-b"
 			if provider == "gcp" {
 				//Setup ENV Variable with the json credentials
 				gcp.SetKeyEnvVar(key)
 			}
 			//TODO: pass-in variables
-			err := cluster.CreateCluster(provider, project, env, zone, dryrun, key, tfConfigPath)
+			err := cluster.CreateCluster(project, env, dryrun, tfConfigPath)
 			if err != nil {
 				log.Fatalf("Could not create cluster in project: %v. Error: %v", project, err)
 			}
@@ -336,15 +337,12 @@ func destroyClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringF
 			keyPath := c.String("keyPath")
 			tfConfigPath := c.String("tfConfigPath")
 
-			//TODO: read from project manifest
-			zone := "europe-west2-b"
-
 			if provider == "gcp" {
 				//Setup ENV Variable with the json credentials
 				gcp.SetKeyEnvVar(keyPath)
 			}
 
-			cluster.DestroyCluster(project, env, zone, tfConfigPath)
+			cluster.DestroyCluster(project, env, tfConfigPath)
 			return nil
 		},
 	}
@@ -378,7 +376,8 @@ func installHelmCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag
 	}
 }
 
-func setupEnvironmentCmd(providerFlag *cli.StringFlag, projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag, keyPath *cli.StringFlag, dryrRunFlag *cli.BoolFlag) cli.Command {
+func setupEnvironmentCmd(providerFlag *cli.StringFlag, projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag,
+	keyPath *cli.StringFlag, dryrRunFlag *cli.BoolFlag, zone *cli.StringFlag) cli.Command {
 
 	return cli.Command{
 		Name:  "setupEnvironment",
@@ -389,6 +388,7 @@ func setupEnvironmentCmd(providerFlag *cli.StringFlag, projectFlag *cli.StringFl
 			environmentFlag,
 			keyPath,
 			dryrRunFlag,
+			zone,
 		},
 		Action: func(c *cli.Context) error {
 			fmt.Printf("Validating flags for setupEnvironment\n")
@@ -397,15 +397,15 @@ func setupEnvironmentCmd(providerFlag *cli.StringFlag, projectFlag *cli.StringFl
 			_ = validateStringFlagPresence("env", c)
 			_ = validateStringFlagPresence("project", c)
 			_ = validateStringFlagPresence("keyPath", c)
+			_ = validateStringFlagPresence("zone", c)
 
 			providerValue := c.String("provider")
 			project := c.String("project")
 			env := c.String("env")
 			keyLocation := c.String("keyPath")
 			dryrun := c.Bool("dry-run")
+			zone := c.String("zone")
 
-			// read these values from config based on project and provider
-			zone := "europe-west2-b"
 			clusterName := project + "-" + env
 			cluster.SetupProvider(providerValue, zone, clusterName, project, keyLocation, dryrun)
 
