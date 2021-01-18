@@ -11,11 +11,6 @@ import (
 	"github.com/iac-io/myiac/internal/util"
 )
 
-var (
-	tfvarsPath = util.CurrentExecutableDir() + "/internal/terraform/cluster"
-	tfvarsFile = tfvarsPath + "/cluster.tfvars"
-)
-
 func InstallHelm() {
 	if _, err := os.Stat(util.GetHomeDir() + "/.helm"); os.IsNotExist(err) {
 		log.Println("Waiting 10 seconds for cluster to stabilize before installing Helm")
@@ -59,8 +54,10 @@ func ApplyTerraform(tp string, tf string) {
 }
 
 //TODO: pass variables into the TF template/clustervars
-func CreateCluster(provider string, project string, env string, zone string, dryrun bool, key string) error {
-	InitTerraform(tfvarsPath, project, env)
+func CreateCluster(provider string, project string, env string, zone string, dryrun bool, key string,
+	tfConfigPath string) error {
+	tfvarsPath, tfvarsFile := ValidateTFVars(tfConfigPath)
+	InitTerraform(tfConfigPath, project, env)
 	if dryrun {
 		PlanTerraform(tfvarsPath, tfvarsFile)
 	} else {
@@ -70,7 +67,8 @@ func CreateCluster(provider string, project string, env string, zone string, dry
 	return nil
 }
 
-func DestroyCluster(project string, env string, zone string) {
+func DestroyCluster(project string, env string, zone string, tfConfigPath string) {
+	tfvarsPath, tfvarsFile := ValidateTFVars(tfConfigPath)
 	InitTerraform(tfvarsPath, project, env)
 	log.Println("Waiting 5 seconds before destroying cluster...")
 	time.Sleep(5 * time.Second)
@@ -84,4 +82,19 @@ func DestroyCluster(project string, env string, zone string) {
 	//if err != nil {
 	//	log.Fatal(err)
 	//}
+}
+
+//Misc functions
+func ValidateTFVars(tfPath string) (string, string) {
+	if _, err := os.Stat(tfPath); os.IsNotExist(err) {
+		log.Println("Running Terraform against default configuration")
+		tfvarsPath := util.CurrentExecutableDir() + "/internal/terraform/cluster"
+		tfvarsFile := tfvarsPath + "/cluster.tfvars"
+		return tfvarsPath, tfvarsFile
+	} else {
+		log.Printf("Runnig Terraform with %v configuration", tfPath)
+		tfvarsPath := tfPath
+		tfvarsFile := tfvarsPath + "/cluster.tfvars"
+		return tfvarsPath, tfvarsFile
+	}
 }
