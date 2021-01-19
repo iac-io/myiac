@@ -6,10 +6,18 @@ else
   TERRAFORM_PATH=${2}
 fi
 
+if [ -z "${3}" ]; then
+  HELM_PATH=""
+else
+  HELM_PATH="-v ${3}:/helm"
+fi
+
+
 docker run -ti --rm \
   --name myiac \
   -v ${PWD}/:/workdir \
   -w /workdir \
   -v ${1}:/account.json \
   -v ${TERRAFORM_PATH}/:/terraform \
+  ${HELM_PATH} \
   myiac:latest zsh
