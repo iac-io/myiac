@@ -3,6 +3,8 @@ package cli
 import (
 	"fmt"
 
+	"github.com/iac-io/myiac/services"
+
 	"github.com/iac-io/myiac/internal/cluster"
 	"github.com/iac-io/myiac/internal/deploy"
 	"github.com/iac-io/myiac/internal/gcp"
@@ -10,7 +12,6 @@ import (
 )
 
 //  myiac setupEnvironment --provider gcp --project moneycol --keyPath /home/app/account.json --zone europe-west1-b --env dev
-//
 func updateDnsFromClusterIpsCmd() cli.Command {
 
 	dnsProvider := &cli.StringFlag{
@@ -24,7 +25,7 @@ func updateDnsFromClusterIpsCmd() cli.Command {
 	}
 
 	return cli.Command{
-		Name:  "setupNodeTerminationHandlers",
+		Name:  "updateDnsFromClusterIpsCmd",
 		Usage: "Setup to update dns on node termination/preemption",
 		Flags: []cli.Flag{
 			dnsProvider,
@@ -52,7 +53,8 @@ func updateDnsFromClusterIpsCmd() cli.Command {
 			dnsService, _ := gcp.NewDNSService(dnsProvider, "moneycol")
 			gkeService := cluster.NewGkeClusterService(deployer, dnsService, domainName, projectId, env)
 
-			err = gkeService.SetupNodeTerminationHandlers()
+			dnsEntries := services.NewServiceProps("moneycol").DnsEntries
+			err = gkeService.UpdateDnsFromClusterIps(dnsEntries)
 
 			if err != nil {
 				return fmt.Errorf("error setting up node termination handlers: %s", err)

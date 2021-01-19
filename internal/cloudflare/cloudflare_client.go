@@ -22,6 +22,7 @@ type CfClient interface {
 	CreateDNS(dnsName string, ipAddress string) error
 	DataForDNS(dnsName string) (string, error)
 	UpsertDNSEntry(dnsName string, ipAddress string) error
+	UpsertDNSEntries(dnsEntries []string, ipAddress string) error
 }
 
 type cfClient struct {
@@ -175,6 +176,29 @@ func (cc cfClient) UpsertDNSEntry(dnsName string, ipAddress string) error {
 	// update
 	if err = cc.UpdateDNS(dnsName, ipAddress); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (cc cfClient) UpsertDNSEntries(dnsEntries []string, ipAddress string) error {
+
+	log.Printf("About to update/insert DNS entries to IP %s", ipAddress)
+
+	var errors []error
+	for _, dnsEntry := range dnsEntries {
+		err := cc.UpsertDNSEntry(dnsEntry, ipAddress)
+		if err != nil {
+			fmt.Printf("Error updating DNS entry %s: %v", dnsEntry, err)
+			errors = append(errors, err)
+		} else {
+			log.Printf("DNS entry %s updated", dnsEntry)
+		}
+	}
+
+	if len(errors) > 0 {
+		fmt.Printf("errors ocurred during upsert of DNS entries %v", errors)
+		return errors[0]
 	}
 
 	return nil

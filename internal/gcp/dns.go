@@ -21,6 +21,7 @@ const (
 
 type DNSService interface {
 	UpsertDNSEntry(dnsName string, ipAddress string) error
+	UpsertDNSEntries(dnsEntries []string, ipAddress string) error
 }
 
 type DNSChangeRequest interface {
@@ -165,4 +166,27 @@ func (dnsService *GoogleCloudDNSService) UpsertDNSRecord(dnsRecordType, dnsRecor
 
 func (dnsService *GoogleCloudDNSService) UpsertDNSEntry(dnsName string, ipAddress string) error {
 	return dnsService.UpsertDNSRecord("A", dnsName, ipAddress)
+}
+
+func (dnsService *GoogleCloudDNSService) UpsertDNSEntries(dnsEntries []string, ipAddress string) error {
+
+	log.Info().Msg("About to update/insert DNS entries to IP " + ipAddress)
+
+	var errors []error
+	for _, dnsEntry := range dnsEntries {
+		err := dnsService.UpsertDNSRecord("A", dnsEntry, ipAddress)
+		if err != nil {
+			fmt.Printf("Error updating DNS entry %s: %v", dnsEntry, err)
+			errors = append(errors, err)
+		} else {
+			log.Info().Msg("DNS entry " + dnsEntry + " updated")
+		}
+	}
+
+	if len(errors) > 0 {
+		fmt.Printf("errors ocurred during upsert of DNS entries %v", errors)
+		return errors[0]
+	}
+
+	return nil
 }
