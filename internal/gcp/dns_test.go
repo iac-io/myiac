@@ -42,7 +42,7 @@ func TestChangeDnsRecord(t *testing.T) {
 }
 
 func TestDNSServiceCreate(t *testing.T) {
-	t.Skip("skipping test; Cloudflare setup is required")
+	t.Skip("skipping test; cloudflare setup is required")
 	dnsService, err := NewDNSService(dnsProviderCloudflare, "moneycol")
 
 	if err != nil {
