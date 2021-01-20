@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const Skip = true
+
 func TestMain(m *testing.M) {
 	setup()
 	code := m.Run()
@@ -18,12 +20,22 @@ func TestMain(m *testing.M) {
 }
 
 func setup() {
-	deleteZone("test.net")
+	if !Skip {
+		log.Printf("Setting up...")
+		deleteZone("test.net")
+	} else {
+		log.Printf("Setup: SKIP")
+	}
 }
 
 func shutdown() {
-	log.Printf("Cleaning up...")
-	deleteZone("test.net")
+	if !Skip {
+		log.Printf("Cleaning up...")
+		deleteZone("test.net")
+	} else {
+		log.Printf("Shutdown: SKIP")
+	}
+
 }
 
 func TestBaseSetupFromApiKey(t *testing.T) {
