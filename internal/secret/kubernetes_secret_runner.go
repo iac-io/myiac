@@ -26,7 +26,7 @@ func NewKubernetesRunner(commandRunner commandline.CommandRunner) KubernetesSecr
 // CreateTlsSecret create a TLS secret in Kubernetes, used to store SSL certificates from its cert and key files
 // note: it deletes any existing secret with the same name in the same namespace
 func (kr kubernetesRunner) CreateTlsSecret(name string, namespace string, keyFile string, certFile string) {
-	deleteSecret(name, namespace)
+	deleteSecret(kr.cmdRunner, name, namespace)
 	keysArg := ""
 
 	fmt.Printf("Adding key file: %s -> %s", keyFile, "*****\n")
@@ -47,7 +47,7 @@ func (kr kubernetesRunner) CreateTlsSecret(name string, namespace string, keyFil
 // See: https://stackoverflow.com/questions/45879498/how-can-i-update-a-secret-on-kubernetes-when-it-is-generated-from-a-file
 // Example: kubectl create secret generic firestore-key --from-file=key.json=/path/to/moneycol-firestore-collections-api.json
 func (kr kubernetesRunner) CreateFileSecret(name string, namespace string, jsonKeyPath string) {
-	deleteSecret(name, namespace)
+	deleteSecret(kr.cmdRunner, name, namespace)
 	fromFileArg := fmt.Sprintf("--from-file=%s.json=%s", name, jsonKeyPath)
 	cmdLine := fmt.Sprintf("kubectl create secret generic %s %s -n %s", name, fromFileArg, namespace)
 	kr.cmdRunner.SetupCmdLine(cmdLine)
@@ -63,7 +63,7 @@ func (kr kubernetesRunner) FindSecret(name string, namespace string) string {
 
 // kubectl create secret generic dev-db-secret --from-literal=username=devuser --from-literal=password='S!B\*d$zDsb='
 func (kr kubernetesRunner) CreateLiteralSecret(name string, namespace string, literalsMap map[string]string) {
-	deleteSecret(name, namespace)
+	deleteSecret(kr.cmdRunner, name, namespace)
 	fromLiteralArg := ""
 	for k, v := range literalsMap {
 		fmt.Printf("Adding secret literal: %s -> %s", k, "*****\n")
@@ -72,15 +72,15 @@ func (kr kubernetesRunner) CreateLiteralSecret(name string, namespace string, li
 
 	fromLiteralArg = strings.TrimSpace(fromLiteralArg)
 	argsArray := []string{"create", "secret", "generic", name, fromLiteralArg, "-n", namespace}
-	cmd := commandline.New("kubectl", argsArray)
-	cmd.SetSuppressOutput(true)
-	cmd.Run()
+	kr.cmdRunner.Setup("kubectl", argsArray)
+	kr.cmdRunner.SetSuppressOutput(true)
+	kr.cmdRunner.Run()
 }
 
-func deleteSecret(name string, namespace string) {
-	argsArray := []string{"delete", "secret", name, "-n", namespace}
-	cmd := commandline.New("kubectl", argsArray)
-	cmd.SetSuppressOutput(true)
-	cmd.IgnoreError(true)
-	cmd.Run()
+func deleteSecret(cmdRunner commandline.CommandRunner, name string, namespace string) {
+	cmdLine := fmt.Sprintf("kubectl delete secret %s -n %s", name, namespace)
+	cmdRunner.SetupCmdLine(cmdLine)
+	cmdRunner.SetSuppressOutput(true)
+	cmdRunner.IgnoreError(true)
+	cmdRunner.Run()
 }

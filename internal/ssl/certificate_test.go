@@ -29,11 +29,14 @@ func TestCreateTlsCertificate(t *testing.T) {
 	certStore.Register(certificate)
 
 	// then
+	expectedDeleteSecretCmdLine := "kubectl delete secret test-domain -n default"
 	expectedCreateSecretCmdLine :=
 		"kubectl -n default create secret tls test-domain --key=/tmp/tls.key --cert=/tmp/tls.crt"
-	actualCreateSecretCmdLine := cmdLine.CmdLines[0]
+	actualPreviousSecretCmdLine := cmdLine.CmdLines[0]
+	actualCreateSecretCmdLine := cmdLine.CmdLines[1]
 
 	createdSecretName := kubernetesRunner.FindSecret(domain, "default")
 	assert.Contains(t, createdSecretName, domain)
 	assert.Equal(t, expectedCreateSecretCmdLine, actualCreateSecretCmdLine)
+	assert.Equal(t, expectedDeleteSecretCmdLine, actualPreviousSecretCmdLine)
 }
