@@ -21,7 +21,8 @@ RUN \
         zsh \
         go \
         busybox-extras \
-        mtr && \
+        mtr \
+        sed && \
     gcloud components install kubectl && \
     cd /tmp && \
     wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip && \
