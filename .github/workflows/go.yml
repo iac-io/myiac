@@ -26,5 +26,6 @@ jobs:
 
       - name: GO test
         run: |
-          go test ./...  -coverprofile=test.out
+          go clean -testcache
+          go test -v ./...  -coverprofile=test.out
           go tool cover -func=test.out
