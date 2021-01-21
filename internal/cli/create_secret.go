@@ -76,9 +76,7 @@ func createSecretForServiceAccount(saEmail string, secretName string, recreateKe
 func createLiteralSecret(secretName string, literal string) error {
 	if isSingleKeyValuePair(literal) {
 		//TODO: support multiple literals comma separated
-		literalArr := strings.Split(literal, "=")
-		literalMap := make(map[string]string)
-		literalMap[literalArr[0]] = literalArr[1]
+		literalMap := keyValuePairToMap(literal)
 		kubeSecretManager := secret.CreateKubernetesSecretManager("default")
 		log.Printf("Creating literal secret with name %s", secretName)
 		kubeSecretManager.CreateLiteralSecret(secretName, literalMap)
@@ -92,4 +90,11 @@ func createLiteralSecret(secretName string, literal string) error {
 func isSingleKeyValuePair(literal string) bool {
 	literalArr := strings.Split(literal, "=")
 	return len(literalArr) == 2
+}
+
+func keyValuePairToMap(keyValuePair string) map[string]string {
+	literalArr := strings.Split(keyValuePair, "=")
+	literalMap := make(map[string]string)
+	literalMap[literalArr[0]] = literalArr[1]
+	return literalMap
 }
