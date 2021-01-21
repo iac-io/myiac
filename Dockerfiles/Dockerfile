@@ -1,18 +1,23 @@
 FROM golang:1.15-alpine as myiac-builder
 
-ADD .. /workdir
+# Dummy
+ARG EXTRA_WORKDIR_COPY=/workdir/Dockerfiles
+ARG EXTRA_WORKDIR_DEST=/home/app/Dockerfiles
+ADD . /workdir
 
 RUN \
     cd /workdir && \
     go build -o /usr/bin/myiac cmd/myiac/myiac.go
 
 FROM google/cloud-sdk:alpine
-COPY --from=myiac-builder /usr/bin/myiac /usr/bin/myiac
-#COPY --from=myiac-builder /workdir/account.json /home/app/account.json
-#COPY --from=myiac-builder /workdir/charts /home/app/charts
 
+COPY --from=myiac-builder /usr/bin/myiac /usr/bin/myiac
+COPY --from=myiac-builder /workdir/*.json /home/app/
+COPY --from=myiac-builder $EXTRA_WORKDIR_COPY $EXTRA_WORKDIR_DEST
+
+ARG CURRENT_HELM_VERSION=3.1.2
 ENV TERRAFORM_VERSION=0.12.29 \
-    HELM_VERSION=3.1.2
+    HELM_VERSION=$CURRENT_HELM_VERSION
 
 RUN \
     apk --update add \

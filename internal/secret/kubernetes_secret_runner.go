@@ -2,6 +2,7 @@ package secret
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/iac-io/myiac/internal/commandline"
@@ -63,6 +64,7 @@ func (kr kubernetesRunner) FindSecret(name string, namespace string) string {
 
 // kubectl create secret generic dev-db-secret --from-literal=username=devuser --from-literal=password='S!B\*d$zDsb='
 func (kr kubernetesRunner) CreateLiteralSecret(name string, namespace string, literalsMap map[string]string) {
+	log.Printf("kubernetes secret: clearing any existing secret with name %s in namespace %s first...", name, namespace)
 	deleteSecret(kr.cmdRunner, name, namespace)
 	fromLiteralArg := ""
 	for k, v := range literalsMap {

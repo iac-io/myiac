@@ -25,7 +25,7 @@ func updateDnsFromClusterIpsCmd() cli.Command {
 	}
 
 	return cli.Command{
-		Name:  "updateDnsFromClusterIpsCmd",
+		Name:  "updateDnsWithClusterIps",
 		Usage: "Setup to update dns on node termination/preemption",
 		Flags: []cli.Flag{
 			dnsProvider,
