@@ -57,9 +57,14 @@ func NewGcpProvider(projectId string, keyLocation string, gkeCluster GkeCluster)
 func (gcp *GcpProvider) Setup() {
 	setupDone := gcp.checkSetup()
 	if !setupDone {
+		// Activate account
 		cmdLine := fmt.Sprintf("gcloud auth activate-service-account --key-file %s", gcp.keyLocation)
 		cmd := commandline.NewCommandLine(cmdLine)
 		cmdOutput := cmd.Run()
+		// Authenticate with GCP
+		AuthCmd := fmt.Sprintf("gcloud config set project %s", gcp.projectId)
+		cmd1 := commandline.NewCommandLine(AuthCmd)
+		cmd1.Run()
 		gcp.masterSaEmail = extractServiceAccountEmail(cmdOutput.Output)
 		gcp.savePreferences()
 	}

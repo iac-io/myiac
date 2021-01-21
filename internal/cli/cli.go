@@ -31,24 +31,27 @@ func BuildCli() {
 	environmentFlag := &cli.StringFlag{Name: "env, e", Usage: "The environment to refer to (dev,prod)"}
 	projectFlag := &cli.StringFlag{Name: "project, p", Usage: "The project to refer to (projects folder manifests)"}
 	propertiesFlag := &cli.StringFlag{Name: "properties", Usage: "Properties for deployments"}
-	dryrRunFlag := &cli.BoolFlag{Name: "dry-run", Usage: "Dry Run"}
+	dryRunFlag := &cli.BoolFlag{Name: "dry-run", Usage: "Dry Run"}
 	providerFlag := &cli.StringFlag{Name: "provider", Usage: "Select k8s provider (GCP only for now) "}
 
 	keyPath := &cli.StringFlag{Name: "keyPath", Usage: "SA key path"}
 	tfConfigPath := &cli.StringFlag{Name: "tfConfigPath", Usage: "Terraform Configuration Directory Path"}
-	zone := &cli.StringFlag{Name: "zone", Usage: "Select Zone: example europe-west2-b"}
-
-	setupEnvironment := setupEnvironmentCmd(providerFlag, projectFlag, environmentFlag, keyPath, dryrRunFlag, zone)
+	zoneFlag := &cli.StringFlag{Name: "zone", Usage: "Cluster Zone  (example: europe-west2-b)"}
+	poolNameFlag := &cli.StringFlag{Name: "pool-name", Usage: "Pool Name"}
+	poolSizeFlag := &cli.StringFlag{Name: "pool-size", Usage: "New Pool Size"}
+	setupEnvironment := setupEnvironmentCmd(providerFlag, projectFlag, environmentFlag, keyPath, dryRunFlag, zoneFlag)
 	dockerSetup := dockerSetupCmd(projectFlag, environmentFlag)
 	dockerBuild := dockerBuildCmd(projectFlag)
 
-	createClusterCmd := createClusterCmd(projectFlag, environmentFlag, dryrRunFlag, providerFlag, keyPath,
-		tfConfigPath)
+	createClusterCmd := createClusterCmd(projectFlag, environmentFlag, dryRunFlag, providerFlag, keyPath,
+		tfConfigPath, zoneFlag)
 	installHelmCmd := installHelmCmd(projectFlag, environmentFlag)
 	destroyClusterCmd := destroyClusterCmd(projectFlag, environmentFlag, providerFlag, keyPath, tfConfigPath)
 
 	deployApp := deployAppSetup(projectFlag, environmentFlag, propertiesFlag)
 	resizeClusterCmd := resizeClusterCmd(projectFlag, environmentFlag)
+	resizePoolCmd := resizePoolCmd(providerFlag, projectFlag, environmentFlag, poolNameFlag, poolSizeFlag, zoneFlag,
+		keyPath, dryRunFlag)
 	createSecretCmd := createSecretCmd()
 	cryptCmd := cryptCmd(projectFlag)
 	createCertCmd := createCertCmd()
@@ -65,6 +68,7 @@ func BuildCli() {
 		createSecretCmd,
 		cryptCmd,
 		createCertCmd,
+		resizePoolCmd,
 	}
 
 	err := app.Run(os.Args)
@@ -130,6 +134,58 @@ func cryptCmd(projectFlag *cli.StringFlag) cli.Command {
 	}
 }
 
+func resizePoolCmd(providerFlag *cli.StringFlag, projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag,
+	poolNameFlag *cli.StringFlag, poolSizeFlag *cli.StringFlag, zoneFlag *cli.StringFlag,
+	keyPath *cli.StringFlag, dryRunFlag *cli.BoolFlag) cli.Command {
+
+	return cli.Command{
+		Name:  "resizePool",
+		Usage: "resizePool to given capacity",
+		Flags: []cli.Flag{
+			providerFlag,
+			projectFlag,
+			environmentFlag,
+			poolNameFlag,
+			poolSizeFlag,
+			zoneFlag,
+			keyPath,
+			dryRunFlag,
+		},
+		Action: func(c *cli.Context) error {
+			fmt.Printf("Validating flags for resizePool\n")
+			_ = validateBaseFlags(c)
+			//_ = validateNodePoolsSize(c)
+			_ = validateStringFlagPresence("provider", c)
+			_ = validateStringFlagPresence("project", c)
+			_ = validateStringFlagPresence("env", c)
+			_ = validateStringFlagPresence("zone", c)
+			_ = validateStringFlagPresence("keyPath", c)
+			_ = validateStringFlagPresence("pool-name", c)
+			_ = validateStringFlagPresence("pool-size", c)
+
+			provider := c.String("provider")
+			project := c.String("project")
+			env := c.String("env")
+			zone := c.String("zone")
+			key := c.String("keyPath")
+			poolName := c.String("pool-name")
+			poolSize := c.String("pool-size")
+			dryrRun := c.Bool("dry-run")
+
+			//TODO: read from project manifest
+			//log.Printf("project: %s", project)
+			//log.Printf("env: %s", env)
+			//log.Printf("zone: %s", zone)
+			//log.Printf("resizong Node Pool: %s to %s nodes", poolName, poolSize)
+			cluster.SetupProvider(provider, zone, project+"-"+env, project, key, dryrRun)
+			gcp.ResizePool(project, env, poolName, poolSize, zone)
+			//gcp.ResizeCluster(project, zone, env, nodePoolsSize)
+			return nil
+		},
+	}
+	//
+}
+
 func resizeClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag) cli.Command {
 	nodePoolsSizeFlag := &cli.StringFlag{Name: "nodePoolsSize",
 		Usage: "Target size of all node pools"}
@@ -149,7 +205,6 @@ func resizeClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFl
 			project := c.String("project")
 			env := c.String("env")
 			nodePoolsSize := c.Int("nodePoolsSize")
-
 			gcp.SetupEnvironment(project)
 
 			//TODO: read from project manifest
@@ -268,17 +323,18 @@ func deployAppSetup(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag
 }
 
 func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag,
-	dryrRunFlag *cli.BoolFlag, providerFlag *cli.StringFlag, keyPath *cli.StringFlag, tfConfigPath *cli.StringFlag) cli.Command {
+	dryRunFlag *cli.BoolFlag, providerFlag *cli.StringFlag, keyPath *cli.StringFlag, tfConfigPath *cli.StringFlag, zoneFlag *cli.StringFlag) cli.Command {
 	return cli.Command{
 		Name:  "createCluster",
 		Usage: "Create a Kubernetes cluster through Terraform",
 		Flags: []cli.Flag{
 			projectFlag,
 			environmentFlag,
-			dryrRunFlag,
+			dryRunFlag,
 			providerFlag,
 			keyPath,
 			tfConfigPath,
+			zoneFlag,
 		},
 		Action: func(c *cli.Context) error {
 			fmt.Printf("Validating flags for createCluster\n")
@@ -286,6 +342,7 @@ func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFl
 			_ = validateStringFlagPresence("provider", c)
 			_ = validateStringFlagPresence("env", c)
 			_ = validateStringFlagPresence("keyPath", c)
+			_ = validateStringFlagPresence("zone", c)
 			fmt.Printf("createCluster running with flags\n")
 
 			project := c.String("project")
@@ -294,16 +351,20 @@ func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFl
 			provider := c.String("provider")
 			key := c.String("keyPath")
 			tfConfigPath := c.String("tfConfigPath")
+			zone := c.String("zone")
+			clusterName := project + "-" + env
 
 			if provider == "gcp" {
 				//Setup ENV Variable with the json credentials
 				gcp.SetKeyEnvVar(key)
 			}
+
 			//TODO: pass-in variables
 			err := cluster.CreateCluster(project, env, dryrun, tfConfigPath)
 			if err != nil {
 				log.Fatalf("Could not create cluster in project: %v. Error: %v", project, err)
 			}
+			cluster.SetupProvider(provider, zone, clusterName, project, key, dryrun)
 
 			return nil
 
@@ -377,7 +438,7 @@ func installHelmCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag
 }
 
 func setupEnvironmentCmd(providerFlag *cli.StringFlag, projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag,
-	keyPath *cli.StringFlag, dryrRunFlag *cli.BoolFlag, zone *cli.StringFlag) cli.Command {
+	keyPath *cli.StringFlag, dryRunFlag *cli.BoolFlag, zone *cli.StringFlag) cli.Command {
 
 	return cli.Command{
 		Name:  "setupEnvironment",
@@ -387,7 +448,7 @@ func setupEnvironmentCmd(providerFlag *cli.StringFlag, projectFlag *cli.StringFl
 			projectFlag,
 			environmentFlag,
 			keyPath,
-			dryrRunFlag,
+			dryRunFlag,
 			zone,
 		},
 		Action: func(c *cli.Context) error {
