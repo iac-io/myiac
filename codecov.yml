@@ -1,0 +1,18 @@
+coverage:
+  range: 10..100
+  round: down
+  precision: 10
+
+comment:
+  layout: "diff , files"
+  behavior: once
+  require_changes: false
+  require_base: yes
+  require_head: yes
+  branches:
+    - "master"
+    - "feature/*"
+    - "issue/*"
+    - "update/*"
+    - "fix/*"
+  after_n_builds: 1

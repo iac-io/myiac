@@ -1,6 +1,7 @@
 # MyIAC
 
-![Build](https://github.com/iac-io/myiac/workflows/Build%20MyIaC/badge.svg?branch=master)
+![Build](https://github.com/iac-io/myiac/workflows/Build%20MyIaC/badge.svg?branch=master) 
+[![codecov](https://codecov.io/gh/iac-io/myiac/branch/master/graph/badge.svg?token=RSFM9B2QJ5)](https://codecov.io/gh/iac-io/myiac)
 
 Infrastructure as code. GCP for now.
 
