@@ -1,8 +1,9 @@
 FROM golang:1.15-alpine as myiac-builder
 
-# Dummy
-ARG EXTRA_WORKDIR_COPY=/workdir/Dockerfiles
+# Placeholders to include extra folders in final container (i.e. charts)
+ARG EXTRA_WORKDIR_ORIG=/workdir/Dockerfiles
 ARG EXTRA_WORKDIR_DEST=/home/app/Dockerfiles
+
 ADD . /workdir
 
 RUN \
@@ -13,7 +14,7 @@ FROM google/cloud-sdk:alpine
 
 COPY --from=myiac-builder /usr/bin/myiac /usr/bin/myiac
 COPY --from=myiac-builder /workdir/*.json /home/app/
-COPY --from=myiac-builder $EXTRA_WORKDIR_COPY $EXTRA_WORKDIR_DEST
+COPY --from=myiac-builder $EXTRA_WORKDIR_ORIG $EXTRA_WORKDIR_DEST
 
 ARG CURRENT_HELM_VERSION=3.1.2
 ENV TERRAFORM_VERSION=0.12.29 \
