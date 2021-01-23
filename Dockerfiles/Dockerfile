@@ -14,7 +14,7 @@ FROM google/cloud-sdk:alpine
 
 COPY --from=myiac-builder /usr/bin/myiac /usr/bin/myiac
 COPY --from=myiac-builder /workdir/*.json /home/app/
-COPY --from=myiac-builder $EXTRA_WORKDIR_ORIG $EXTRA_WORKDIR_DEST
+COPY --from=myiac-builder /workdir/charts /home/app/charts
 
 ARG CURRENT_HELM_VERSION=3.1.2
 ENV TERRAFORM_VERSION=0.12.29 \
