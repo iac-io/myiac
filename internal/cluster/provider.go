@@ -10,9 +10,37 @@ import (
 	"github.com/iac-io/myiac/internal/util"
 )
 
+const (
+	gcpProviderName = "gcp"
+)
+
 type Provider interface {
 	Setup()
 	ClusterSetup()
+}
+
+func ProviderSetup() {
+	providerFactory := ProviderFactory{}
+	provider := providerFactory.getProvider()
+	provider.Setup()
+	provider.ClusterSetup()
+}
+
+func SetupProvider(providerValue string, zone string, clusterName string, project string,
+	keyLocation string, dryRunFlag bool) {
+	var provider Provider
+	if providerValue == gcpProviderName {
+		gkeCluster := GkeCluster{zone: zone, name: clusterName}
+		provider = NewGcpProvider(project, keyLocation, gkeCluster)
+	} else {
+		panic(fmt.Errorf("invalid provider provided: %v", providerValue))
+	}
+	provider.Setup()
+	if !dryRunFlag {
+		provider.ClusterSetup()
+	}
+
+	log.Printf("Set local kubectl to project: %v \n", project)
 }
 
 type GkeCluster struct {
@@ -26,7 +54,7 @@ type ProviderFactory struct {
 func (pf ProviderFactory) getProvider() Provider {
 	prefs := preferences.DefaultConfig()
 	provider := prefs.Get("provider")
-	if provider == "gcp" {
+	if provider == gcpProviderName {
 		keyLocation := prefs.Get("keyLocation")
 		project := prefs.Get("project")
 		clusterName := prefs.Get("gke.clusterName")
@@ -42,6 +70,7 @@ type gcpProvider struct {
 	projectId  string
 	saKey      *gcp.ServiceAccountKey
 	gkeCluster GkeCluster
+	prefs      preferences.Preferences
 }
 
 func NewGcpProvider(projectId string, keyLocation string, gkeCluster GkeCluster) *gcpProvider {
@@ -51,9 +80,12 @@ func NewGcpProvider(projectId string, keyLocation string, gkeCluster GkeCluster)
 		log.Fatal(fmt.Errorf("error obtaining key from location %s: %v", keyLocation, err))
 	}
 
-	return &gcpProvider{projectId: projectId,
+	return &gcpProvider{
+		projectId:  projectId,
 		saKey:      key,
-		gkeCluster: gkeCluster}
+		gkeCluster: gkeCluster,
+		prefs:      preferences.DefaultConfig(),
+	}
 }
 
 // Setup activate master service account from key
@@ -80,8 +112,14 @@ func (gp *gcpProvider) ActivateServiceAccount() {
 
 func (gp gcpProvider) checkSetup() bool {
 	providedSaEmail := gp.saKey.Email
+	return isAuthenticated(providedSaEmail)
+}
+
+//TODO:  Extract
+
+func isAuthenticated(saEmail string) bool {
 	authList := listActiveAuth()
-	done := isProvidedSaEmailAuthenticated(providedSaEmail, authList)
+	done := isProvidedSaEmailAuthenticated(saEmail, authList)
 	return done
 }
 
@@ -127,39 +165,15 @@ func (gp gcpProvider) ClusterSetup() {
 }
 
 func (gp gcpProvider) savePreferences() {
-	prefs := preferences.DefaultConfig()
-	prefs.Set("provider", "gcp")
+	prefs := gp.prefs
+	prefs.Set("provider", gcpProviderName)
 	prefs.Set("keyLocation", gp.saKey.KeyFileLocation)
 	prefs.Set("project", gp.projectId)
 	prefs.Set("masterSaEmail", gp.saKey.Email)
 }
 
-func (gcp gcpProvider) saveGkePreferences(clusterName string, zone string) {
-	prefs := preferences.DefaultConfig()
+func (gp gcpProvider) saveGkePreferences(clusterName string, zone string) {
+	prefs := gp.prefs
 	prefs.Set("gke.clusterName", clusterName)
 	prefs.Set("gke.clusterZone", zone)
-}
-
-func ProviderSetup() {
-	providerFactory := ProviderFactory{}
-	provider := providerFactory.getProvider()
-	provider.Setup()
-	provider.ClusterSetup()
-}
-
-func SetupProvider(providerValue string, zone string, clusterName string, project string,
-	keyLocation string, dryrunflag bool) {
-	var provider Provider
-	if providerValue == "gcp" {
-		gkeCluster := GkeCluster{zone: zone, name: clusterName}
-		provider = NewGcpProvider(project, keyLocation, gkeCluster)
-	} else {
-		panic(fmt.Errorf("invalid provider provided: %v", providerValue))
-	}
-	provider.Setup()
-	if !dryrunflag {
-		provider.ClusterSetup()
-	}
-
-	log.Printf("Set local kubectl to project: %v \n", project)
 }
