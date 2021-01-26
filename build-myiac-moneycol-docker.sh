@@ -2,11 +2,7 @@
 
 export CHARTS_PATH=$1
 REGISTRY_WITH_REPO=eu.gcr.io/moneycol
-VERSION=0.5.0-app
-
-#if [[ -n "$CHARTS_PATH" ]]; then
-#  rsync -rv --exclude=.git "$CHARTS_PATH" .
-#fi
+VERSION=0.5.1-app
 
 # Before building copy charts from ../charts
 
