@@ -164,6 +164,8 @@ func (gp gcpProvider) ClusterSetup() {
 	gp.saveGkePreferences(clusterName, zone)
 }
 
+// move to gke.go?
+
 func (gp gcpProvider) savePreferences() {
 	prefs := gp.prefs
 	prefs.Set("provider", gcpProviderName)
