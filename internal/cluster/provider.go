@@ -3,10 +3,9 @@ package cluster
 import (
 	"fmt"
 	"log"
-	"regexp"
-	"strings"
 
 	"github.com/iac-io/myiac/internal/commandline"
+	"github.com/iac-io/myiac/internal/gcp"
 	"github.com/iac-io/myiac/internal/preferences"
 	"github.com/iac-io/myiac/internal/util"
 )
@@ -39,88 +38,103 @@ func (pf ProviderFactory) getProvider() Provider {
 	}
 }
 
-type GcpProvider struct {
-	projectId     string
-	keyLocation   string
-	masterSaEmail string
-	gkeCluster    GkeCluster
+type gcpProvider struct {
+	projectId  string
+	saKey      *gcp.ServiceAccountKey
+	gkeCluster GkeCluster
 }
 
-func NewGcpProvider(projectId string, keyLocation string, gkeCluster GkeCluster) *GcpProvider {
-	validateKeyLocation(keyLocation)
-	return &GcpProvider{projectId: projectId,
-		keyLocation: keyLocation,
-		gkeCluster:  gkeCluster}
+func NewGcpProvider(projectId string, keyLocation string, gkeCluster GkeCluster) *gcpProvider {
+	key, err := gcp.NewServiceAccountKey(keyLocation)
+
+	if err != nil {
+		log.Fatal(fmt.Errorf("error obtaining key from location %s: %v", keyLocation, err))
+	}
+
+	return &gcpProvider{projectId: projectId,
+		saKey:      key,
+		gkeCluster: gkeCluster}
 }
 
 // Setup activate master service account from key
-func (gcp *GcpProvider) Setup() {
-	setupDone := gcp.checkSetup()
+func (gp *gcpProvider) Setup() {
+	setupDone := gp.checkSetup()
 	if !setupDone {
-		// Activate account
-		cmdLine := fmt.Sprintf("gcloud auth activate-service-account --key-file %s", gcp.keyLocation)
-		cmd := commandline.NewCommandLine(cmdLine)
-		cmdOutput := cmd.Run()
-		// Authenticate with GCP
-		AuthCmd := fmt.Sprintf("gcloud config set project %s", gcp.projectId)
-		cmd1 := commandline.NewCommandLine(AuthCmd)
-		cmd1.Run()
-		gcp.masterSaEmail = extractServiceAccountEmail(cmdOutput.Output)
-		gcp.savePreferences()
+		gp.ActivateServiceAccount()
+		gp.SetProject()
+		gp.savePreferences()
 	}
 }
 
-func (gcp GcpProvider) checkSetup() bool {
+func (gp *gcpProvider) SetProject() {
+	cmdLine := fmt.Sprintf("gcloud config set project %s", gp.projectId)
+	cmd := commandline.NewCommandLine(cmdLine)
+	cmd.Run()
+}
+
+func (gp *gcpProvider) ActivateServiceAccount() {
+	cmdLine := fmt.Sprintf("gcloud auth activate-service-account --key-file %s", gp.saKey.KeyFileLocation)
+	cmd := commandline.NewCommandLine(cmdLine)
+	cmd.Run()
+}
+
+func (gp gcpProvider) checkSetup() bool {
+	providedSaEmail := gp.saKey.Email
+	authList := listActiveAuth()
+	done := isProvidedSaEmailAuthenticated(providedSaEmail, authList)
+	return done
+}
+
+func listActiveAuth() []map[string]interface{} {
 	cmdLine := fmt.Sprintf("gcloud auth list --format json")
 	cmd := commandline.NewCommandLine(cmdLine)
 	cmdOutput := cmd.Run()
 	authList := util.ParseArray(cmdOutput.Output)
+	return authList
+}
 
+func isProvidedSaEmailAuthenticated(providedSaEmail string, authList []map[string]interface{}) bool {
+	log.Printf("Check if already authenticated with SA: %s", providedSaEmail)
 	for _, accountAuth := range authList {
 		saEmail := accountAuth["account"]
 		status := accountAuth["status"]
 
-		fmt.Printf("Checking account %s\n", saEmail)
-		if status == "ACTIVE" {
-			fmt.Printf("Already authenticated for %s\n", saEmail)
+		log.Printf("Checking account %s", saEmail)
+
+		// at this point we only allow auth using the provided service account key/email
+		// if running inside GCP we would get multiple ACTIVE SAs: the ones of the service this application
+		// is running on
+		if status == "ACTIVE" && (saEmail == providedSaEmail) {
+			log.Printf("Already authenticated for %s\n", saEmail)
 			return true
 		}
 	}
-
+	log.Printf("Authentication is needed for SA: %s", providedSaEmail)
 	return false
 }
 
-func extractServiceAccountEmail(setupCmdOutput string) string {
-	re := regexp.MustCompile(`\[.*\]`)
-	saEmail := re.FindString(setupCmdOutput)
-	saEmail = strings.Replace(saEmail, "[", "", -1)
-	saEmail = strings.Replace(saEmail, "]", "", -1)
-	fmt.Printf("%q\n", saEmail)
-	return saEmail
-}
-
 // ClusterSetup gcloud container clusters get-credentials [cluster-name]
-func (gcp GcpProvider) ClusterSetup() {
+func (gp gcpProvider) ClusterSetup() {
 	action := "container clusters get-credentials"
-	clusterName := gcp.gkeCluster.name
-	zone := gcp.gkeCluster.zone
-	project := gcp.projectId
+	clusterName := gp.gkeCluster.name
+	zone := gp.gkeCluster.zone
+	project := gp.projectId
 	cmdLine := fmt.Sprintf("gcloud %s %s --zone %s --project %s", action, clusterName, zone, project)
 	cmd := commandline.NewCommandLine(cmdLine)
 	cmd.Run()
 	fmt.Println("GKE setup completed")
-	gcp.saveGkePreferences(clusterName, zone)
+	gp.saveGkePreferences(clusterName, zone)
 }
 
-func (gcp GcpProvider) savePreferences() {
+func (gp gcpProvider) savePreferences() {
 	prefs := preferences.DefaultConfig()
 	prefs.Set("provider", "gcp")
-	prefs.Set("keyLocation", gcp.keyLocation)
-	prefs.Set("project", gcp.projectId)
-	prefs.Set("masterSaEmail", gcp.masterSaEmail)
+	prefs.Set("keyLocation", gp.saKey.KeyFileLocation)
+	prefs.Set("project", gp.projectId)
+	prefs.Set("masterSaEmail", gp.saKey.Email)
 }
 
-func (gcp GcpProvider) saveGkePreferences(clusterName string, zone string) {
+func (gcp gcpProvider) saveGkePreferences(clusterName string, zone string) {
 	prefs := preferences.DefaultConfig()
 	prefs.Set("gke.clusterName", clusterName)
 	prefs.Set("gke.clusterZone", zone)
@@ -131,13 +145,6 @@ func ProviderSetup() {
 	provider := providerFactory.getProvider()
 	provider.Setup()
 	provider.ClusterSetup()
-}
-
-func validateKeyLocation(keyLocation string) {
-	if !util.FileExists(keyLocation) {
-		err := fmt.Errorf("key path is invalid %s\n", keyLocation)
-		panic(err)
-	}
 }
 
 func SetupProvider(providerValue string, zone string, clusterName string, project string,
