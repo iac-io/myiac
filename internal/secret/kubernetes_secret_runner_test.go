@@ -10,7 +10,7 @@ import (
 
 func TestCreateFileSecret(t *testing.T) {
 	// setup
-	cmdLine := testutil.FakeKubernetesRunner("secret default/test-secret created")
+	cmdLine := testutil.FakeCommandRunner("secret default/test-secret created")
 	kubernetesRunner := NewKubernetesRunner(cmdLine)
 
 	// given

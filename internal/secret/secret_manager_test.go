@@ -12,7 +12,7 @@ import (
 
 func TestCreateSecret(t *testing.T) {
 	// setup
-	cmdLine := testutil.FakeKubernetesRunner("test-output")
+	cmdLine := testutil.FakeCommandRunner("test-output")
 	kubernetesRunner := NewKubernetesRunner(cmdLine)
 	secretManager := NewKubernetesSecretManager("default", kubernetesRunner)
 

@@ -12,21 +12,21 @@ type ServiceAccountKey struct {
 	Email           string
 }
 
-func NewServiceAccountKey(keyLocationn string) (*ServiceAccountKey, error) {
-	ok, err := isValidKeyLocation(keyLocationn)
+func NewServiceAccountKey(keyLocation string) (*ServiceAccountKey, error) {
+	ok, err := isValidKeyLocation(keyLocation)
 
 	if !ok {
-		log.Printf("error validating key -- this is required")
+		log.Printf("error validating key -- this is required %s", err)
 		return nil, err
 	}
 
-	saEmail, err := extractSaEmailFromKey(keyLocationn)
+	saEmail, err := extractSaEmailFromKey(keyLocation)
 
 	if err != nil {
 		log.Printf("error: email could not be obtained from key at location %s", saEmail)
 	}
 
-	return &ServiceAccountKey{KeyFileLocation: keyLocationn, Email: saEmail}, nil
+	return &ServiceAccountKey{KeyFileLocation: keyLocation, Email: saEmail}, nil
 }
 
 func extractSaEmailFromKey(keyLocation string) (string, error) {

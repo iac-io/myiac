@@ -12,6 +12,7 @@ const (
 	saStatusActive        = "ACTIVE"
 	statusAuthField       = "status"
 	emailAccountAuthField = "account"
+	listAuthCmd           = "gcloud auth list --format json -q"
 )
 
 type Auth interface {
@@ -58,9 +59,9 @@ func (saa ServiceAccountAuth) Key() *ServiceAccountKey {
 }
 
 func (saa ServiceAccountAuth) listActiveAuth() []map[string]interface{} {
-	cmdLine := fmt.Sprintf("gcloud auth list --format json")
-	cmd := commandline.NewCommandLine(cmdLine)
-	cmdOutput := cmd.Run()
+	cmdLine := fmt.Sprintf(listAuthCmd)
+	saa.commandRunner.SetupCmdLine(cmdLine)
+	cmdOutput := saa.commandRunner.Run()
 	authList := util.ParseArray(cmdOutput.Output)
 	return authList
 }
