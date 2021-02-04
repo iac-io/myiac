@@ -1,6 +1,7 @@
 package gcp
 
 import (
+	"fmt"
 	"log"
 	"testing"
 
@@ -40,56 +41,52 @@ const (
 	statusEmptyString = ""
 )
 
-//func TestAuthenticatesWhenValidSa(t *testing.T) {
-//	testAccountKeyPath := "../../testdata/test_account.json"
-//	accountKey, _ := NewServiceAccountKey(testAccountKeyPath)
-//
-//	cmdLine := testutil.FakeCommandRunner("test-output")
-//	saAuth, err := newServiceAccountAuthWithRunner(cmdLine, accountKey)
-//
-//	if err != nil {
-//		log.Fatalf("error creating auth -- %s", err)
-//	}
-//
-//	saAuth.Authenticate()
-//
-//	cmdLineRun := cmdLine.GetCmdLines()[0]
-//	expectedCmdLine := fmt.Sprintf("gcloud auth activate-service-account --key-file %s", testAccountKeyPath)
-//	assert.Equal(t, expectedCmdLine, cmdLineRun)
-//}
-
-func TestChecksAuthDone(t *testing.T) {
+func TestAuthenticatesWhenValidSa(t *testing.T) {
 	testAccountKeyPath := "../../testdata/test_account.json"
 	accountKey, _ := NewServiceAccountKey(testAccountKeyPath)
 
-	cmdLine := testutil.FakeCommandRunner("default-output")
-	cmdLine.FakeCommand(listAuthCmd, statusActiveJson)
-
+	cmdLine := testutil.FakeCommandRunner("test-output")
 	saAuth, err := newServiceAccountAuthWithRunner(cmdLine, accountKey)
 
 	if err != nil {
 		log.Fatalf("error creating auth -- %s", err)
 	}
 
-	isAuthenticated := saAuth.IsAuthenticated()
+	saAuth.Authenticate()
 
-	assert.Equal(t, true, isAuthenticated)
+	cmdLineRun := cmdLine.GetCmdLines()[0]
+	expectedCmdLine := fmt.Sprintf("gcloud auth activate-service-account --key-file %s", testAccountKeyPath)
+	assert.Equal(t, expectedCmdLine, cmdLineRun)
 }
 
-func TestChecksAuthNotDone(t *testing.T) {
+func TestAuthNotDone(t *testing.T) {
 	testAccountKeyPath := "../../testdata/test_account.json"
 	accountKey, _ := NewServiceAccountKey(testAccountKeyPath)
-
 	cmdLine := testutil.FakeCommandRunner("defaultOutput")
-	cmdLine.FakeCommand(listAuthCmd, statusNotActiveJson)
 
-	saAuth, err := newServiceAccountAuthWithRunner(cmdLine, accountKey)
-
-	if err != nil {
-		log.Fatalf("error creating auth -- %s", err)
+	tests := map[string]struct {
+		cmdLine string
+		output  string
+		auth    bool
+	}{
+		"auth done with active status":         {cmdLine: listAuthCmd, output: statusActiveJson, auth: true},
+		"auth not done with non-active status": {cmdLine: listAuthCmd, output: statusNotActiveJson, auth: false},
+		"auth not done with empty json":        {cmdLine: listAuthCmd, output: statusEmptyJson, auth: false},
+		//"auth not done with empty string": {cmdLine: listAuthCmd, output: statusEmptyJson, auth: []bool{false}},
 	}
 
-	isAuthenticated := saAuth.IsAuthenticated()
+	for name, tc := range tests {
 
-	assert.Equal(t, false, isAuthenticated)
+		t.Run(name, func(t *testing.T) {
+			cmdLine.FakeCommand(tc.cmdLine, tc.output)
+			saAuth, err := newServiceAccountAuthWithRunner(cmdLine, accountKey)
+
+			if err != nil {
+				t.Fatalf("error creating auth -- %s", err)
+			}
+
+			isAuthenticated := saAuth.IsAuthenticated()
+			assert.Equal(t, tc.auth, isAuthenticated)
+		})
+	}
 }
