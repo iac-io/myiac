@@ -22,18 +22,16 @@ func (fk *fakeRunner) SetupWithoutOutput(cmd string, args []string) {
 }
 
 func (fk *fakeRunner) Run() commandline.CommandOutput {
-	//currentCmdLine := fk.cmd + " " + strings.Join(fk.args, " ")
-	//fk.CmdLines = append(fk.CmdLines, currentCmdLine)
+	currentCmdLine := fk.cmd + " " + strings.Join(fk.args, " ")
+	fk.CmdLines = append(fk.CmdLines, currentCmdLine)
 
 	// every time we call Run(), check the cmdLine and return the
 	// corresponding output
 	if currentOutput, ok := fk.cmdLineToOutput[fk.currentCmdLine]; ok {
 		fk.output = currentOutput
-		fmt.Printf("output is \n %s", currentOutput)
 		return commandline.CommandOutput{Output: currentOutput}
 	}
 
-	fmt.Printf("output is \n %s", fk.currentCmdLine)
 	// default output
 	return commandline.CommandOutput{Output: fk.output}
 }
