@@ -5,11 +5,13 @@ import (
 	"log"
 	"testing"
 
+	"github.com/iac-io/myiac/internal/util"
+
 	"github.com/stretchr/testify/assert"
 )
 
 func TestValidKeyWithValidEmail(t *testing.T) {
-	testAccountKeyPath := "../../testdata/test_account.json"
+
 	accountEmail := "testAccount@testProject.iam.gserviceaccount.com"
 	accountKey, err := NewServiceAccountKey(testAccountKeyPath)
 
@@ -31,4 +33,13 @@ func TestInvalidValidKeyLocationFails(t *testing.T) {
 	}
 
 	assert.Fail(t, "key location is invalid -- test should've failed")
+}
+
+// util
+func WriteSaKeyToString(testAccountKeyPath string) {
+	err := util.WriteStringToFile(testAccountKeyJson, testAccountKeyPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return
 }
