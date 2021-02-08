@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/iac-io/myiac/internal/util"
-
 	"github.com/stretchr/testify/assert"
 )
 
