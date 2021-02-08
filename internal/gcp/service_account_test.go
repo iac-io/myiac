@@ -2,7 +2,6 @@ package gcp
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -83,11 +82,6 @@ func (m *fakeObjectStorageCache) Write(ctx context.Context, bucketName string, k
 func (m fakeObjectStorageCache) Read(ctx context.Context, bucketName string, objectKey string) (interface{}, error) {
 	args := m.Called(ctx, bucketName, objectKey)
 	return args.Get(0).(interface{}), args.Error(1)
-}
-
-func TestMain(m *testing.M) {
-	code := m.Run()
-	os.Exit(code)
 }
 
 func TestCreateNewKey(t *testing.T) {

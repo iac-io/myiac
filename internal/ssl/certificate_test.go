@@ -12,7 +12,7 @@ import (
 func TestCreateTlsCertificate(t *testing.T) {
 	// setup
 	domain := "test-domain"
-	cmdLine := testutil.FakeKubernetesRunner(domain)
+	cmdLine := testutil.FakeCommandRunner(domain)
 	kubernetesRunner := secret.NewKubernetesRunner(cmdLine)
 	secretManager := secret.NewKubernetesSecretManager("default", kubernetesRunner)
 

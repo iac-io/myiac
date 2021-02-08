@@ -18,6 +18,7 @@ type Preferences interface {
 	Set(name string, value string)
 	Get(name string) string
 	Del(name string)
+	SetMultiple(preferencesSet map[string]string)
 }
 
 type configPreferences struct {
@@ -72,6 +73,12 @@ func (prefs configPreferences) Get(name string) string {
 
 func (prefs configPreferences) Del(name string) {
 	prefs.propertiesFile.Section("").DeleteKey(name)
+}
+
+func (prefs configPreferences) SetMultiple(preferencesSet map[string]string) {
+	for key, value := range preferencesSet {
+		prefs.Set(key, value)
+	}
 }
 
 func createPath(p string) (*os.File, error) {

@@ -3,17 +3,43 @@ package cluster
 import (
 	"fmt"
 	"log"
-	"regexp"
-	"strings"
 
 	"github.com/iac-io/myiac/internal/commandline"
+	"github.com/iac-io/myiac/internal/gcp"
 	"github.com/iac-io/myiac/internal/preferences"
-	"github.com/iac-io/myiac/internal/util"
+)
+
+const (
+	gcpProviderName = "gcp"
 )
 
 type Provider interface {
 	Setup()
 	ClusterSetup()
+}
+
+func ProviderSetup() {
+	providerFactory := ProviderFactory{}
+	provider := providerFactory.getProvider()
+	provider.Setup()
+	provider.ClusterSetup()
+}
+
+func SetupProvider(providerValue string, zone string, clusterName string, project string,
+	keyLocation string, dryRunFlag bool) {
+	var provider Provider
+	if providerValue == gcpProviderName {
+		gkeCluster := GkeCluster{zone: zone, name: clusterName}
+		provider = NewGcpProvider(project, keyLocation, gkeCluster)
+	} else {
+		panic(fmt.Errorf("invalid provider provided: %v", providerValue))
+	}
+	provider.Setup()
+	if !dryRunFlag {
+		provider.ClusterSetup()
+	}
+
+	log.Printf("Set local kubectl to project: %v \n", project)
 }
 
 type GkeCluster struct {
@@ -27,7 +53,7 @@ type ProviderFactory struct {
 func (pf ProviderFactory) getProvider() Provider {
 	prefs := preferences.DefaultConfig()
 	provider := prefs.Get("provider")
-	if provider == "gcp" {
+	if provider == gcpProviderName {
 		keyLocation := prefs.Get("keyLocation")
 		project := prefs.Get("project")
 		clusterName := prefs.Get("gke.clusterName")
@@ -39,120 +65,74 @@ func (pf ProviderFactory) getProvider() Provider {
 	}
 }
 
-type GcpProvider struct {
-	projectId     string
-	keyLocation   string
-	masterSaEmail string
-	gkeCluster    GkeCluster
+type gcpProvider struct {
+	projectId          string
+	serviceAccountAuth gcp.Auth
+	gkeCluster         GkeCluster
+	prefs              preferences.Preferences
+	commandRunner      commandline.CommandRunner
 }
 
-func NewGcpProvider(projectId string, keyLocation string, gkeCluster GkeCluster) *GcpProvider {
-	validateKeyLocation(keyLocation)
-	return &GcpProvider{projectId: projectId,
-		keyLocation: keyLocation,
-		gkeCluster:  gkeCluster}
+func NewGcpProvider(projectId string, keyLocation string, gkeCluster GkeCluster) *gcpProvider {
+	return newGcpProvider(commandline.NewEmpty(), projectId, keyLocation, gkeCluster)
 }
 
-// Setup activate master service account from key
-func (gcp *GcpProvider) Setup() {
-	setupDone := gcp.checkSetup()
-	if !setupDone {
-		// Activate account
-		cmdLine := fmt.Sprintf("gcloud auth activate-service-account --key-file %s", gcp.keyLocation)
-		cmd := commandline.NewCommandLine(cmdLine)
-		cmdOutput := cmd.Run()
-		// Authenticate with GCP
-		AuthCmd := fmt.Sprintf("gcloud config set project %s", gcp.projectId)
-		cmd1 := commandline.NewCommandLine(AuthCmd)
-		cmd1.Run()
-		gcp.masterSaEmail = extractServiceAccountEmail(cmdOutput.Output)
-		gcp.savePreferences()
+func newGcpProvider(commandRunner commandline.CommandRunner, projectId string, keyLocation string,
+	gkeCluster GkeCluster) *gcpProvider {
+	auth, err := gcp.NewServiceAccountAuth(keyLocation)
+
+	if err != nil {
+		log.Fatal(fmt.Errorf("error creating service account auth from key %s: %v", keyLocation, err))
+	}
+
+	return &gcpProvider{
+		projectId:          projectId,
+		serviceAccountAuth: auth,
+		gkeCluster:         gkeCluster,
+		prefs:              preferences.DefaultConfig(),
+		commandRunner:      commandRunner,
 	}
 }
 
-func (gcp GcpProvider) checkSetup() bool {
-	cmdLine := fmt.Sprintf("gcloud auth list --format json")
+// Setup activates the master service account from a key file
+func (gp *gcpProvider) Setup() {
+	log.Printf("Setting up GCP cloud provider authentication...")
+	if !gp.serviceAccountAuth.IsAuthenticated() {
+		gp.serviceAccountAuth.Authenticate()
+		gp.SetProject()
+		gp.savePreferences()
+	}
+}
+
+func (gp *gcpProvider) SetProject() {
+	cmdLine := fmt.Sprintf("gcloud config set project %s", gp.projectId)
 	cmd := commandline.NewCommandLine(cmdLine)
-	cmdOutput := cmd.Run()
-	authList := util.ParseArray(cmdOutput.Output)
-
-	for _, accountAuth := range authList {
-		saEmail := accountAuth["account"]
-		status := accountAuth["status"]
-
-		fmt.Printf("Checking account %s\n", saEmail)
-		if status == "ACTIVE" {
-			fmt.Printf("Already authenticated for %s\n", saEmail)
-			return true
-		}
-	}
-
-	return false
-}
-
-func extractServiceAccountEmail(setupCmdOutput string) string {
-	re := regexp.MustCompile(`\[.*\]`)
-	saEmail := re.FindString(setupCmdOutput)
-	saEmail = strings.Replace(saEmail, "[", "", -1)
-	saEmail = strings.Replace(saEmail, "]", "", -1)
-	fmt.Printf("%q\n", saEmail)
-	return saEmail
+	cmd.Run()
 }
 
 // ClusterSetup gcloud container clusters get-credentials [cluster-name]
-func (gcp GcpProvider) ClusterSetup() {
+func (gp gcpProvider) ClusterSetup() {
 	action := "container clusters get-credentials"
-	clusterName := gcp.gkeCluster.name
-	zone := gcp.gkeCluster.zone
-	project := gcp.projectId
+	clusterName := gp.gkeCluster.name
+	zone := gp.gkeCluster.zone
+	project := gp.projectId
 	cmdLine := fmt.Sprintf("gcloud %s %s --zone %s --project %s", action, clusterName, zone, project)
 	cmd := commandline.NewCommandLine(cmdLine)
 	cmd.Run()
 	fmt.Println("GKE setup completed")
-	gcp.saveGkePreferences(clusterName, zone)
+	gp.saveGkePreferences(clusterName, zone)
 }
 
-func (gcp GcpProvider) savePreferences() {
-	prefs := preferences.DefaultConfig()
-	prefs.Set("provider", "gcp")
-	prefs.Set("keyLocation", gcp.keyLocation)
-	prefs.Set("project", gcp.projectId)
-	prefs.Set("masterSaEmail", gcp.masterSaEmail)
+func (gp gcpProvider) savePreferences() {
+	prefs := gp.prefs
+	prefs.Set("provider", gcpProviderName)
+	prefs.Set("keyLocation", gp.serviceAccountAuth.Key().KeyFileLocation)
+	prefs.Set("masterSaEmail", gp.serviceAccountAuth.Key().Email)
+	prefs.Set("project", gp.projectId)
 }
 
-func (gcp GcpProvider) saveGkePreferences(clusterName string, zone string) {
-	prefs := preferences.DefaultConfig()
+func (gp gcpProvider) saveGkePreferences(clusterName string, zone string) {
+	prefs := gp.prefs
 	prefs.Set("gke.clusterName", clusterName)
 	prefs.Set("gke.clusterZone", zone)
-}
-
-func ProviderSetup() {
-	providerFactory := ProviderFactory{}
-	provider := providerFactory.getProvider()
-	provider.Setup()
-	provider.ClusterSetup()
-}
-
-func validateKeyLocation(keyLocation string) {
-	if !util.FileExists(keyLocation) {
-		err := fmt.Errorf("key path is invalid %s\n", keyLocation)
-		panic(err)
-	}
-}
-
-func SetupProvider(providerValue string, zone string, clusterName string, project string,
-	keyLocation string, dryrunflag bool) {
-	var provider Provider
-	if providerValue == "gcp" {
-		gkeCluster := GkeCluster{zone: zone, name: clusterName}
-		provider = NewGcpProvider(project, keyLocation, gkeCluster)
-	} else {
-		panic(fmt.Errorf("invalid provider provided: %v", providerValue))
-	}
-	provider.Setup()
-	if !dryrunflag {
-		provider.ClusterSetup()
-	}
-
-	log.Printf("Set local kubectl to project: %v \n", project)
 }
