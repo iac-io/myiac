@@ -1,9 +1,9 @@
 FROM google/cloud-sdk:alpine
 
-ENV TERRAFORM_VERSION=0.12.29 \
-    HELM_VERSION=3.1.2 \
+ENV TERRAFORM_VERSION=0.14.6 \
+    HELM_VERSION=3.5.2 \
     GOPATH="/home/app/go" \
-    KUBE_PROMPT_VERSION=1.0.10
+    KUBE_PROMPT_VERSION=1.0.11
 
 RUN \
     apk --update add \

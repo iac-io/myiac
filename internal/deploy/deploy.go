@@ -2,13 +2,13 @@ package deploy
 
 import (
 	"fmt"
+	"github.com/iac-io/myiac/internal/util"
 	"os"
 	"strings"
 
 	"github.com/iac-io/myiac/internal/cluster"
 	"github.com/iac-io/myiac/internal/commandline"
 	"github.com/iac-io/myiac/internal/gcp"
-	"github.com/iac-io/myiac/internal/util"
 )
 
 type Deployment struct {
@@ -58,7 +58,7 @@ func applyDNSThroughSdk(newIP string) {
 // moneycolfrontend, moneycolserver, elasticsearch, traefik, traefik-dev, collections-api
 func Deploy(appName string, environment string, propertiesMap map[string]string, dryRun bool) {
 	helmSetParams := make(map[string]string)
-	if appName == "traefik" || appName == "traefik-dev" {
+	if appName == "traefik" || appName == "traefik-dev" || appName == "test" {
 		helmSetParams = getNodesInternalIpsAsHelmParams()
 	}
 
@@ -74,9 +74,9 @@ func Deploy(appName string, environment string, propertiesMap map[string]string,
 	}
 	helmDeployer.Deploy(&deployment)
 
-	if appName == "traefik" || appName == "traefik-dev" {
-		changeDevDNS()
-	}
+	//if appName == "traefik" || appName == "traefik-dev" {
+	//	changeDevDNS()
+	//}
 }
 
 func addPropertiesToSetParams(helmSetParams map[string]string, propertiesMap map[string]string) {

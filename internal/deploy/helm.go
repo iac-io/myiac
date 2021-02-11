@@ -139,7 +139,7 @@ func (hd *helmDeployer) findChartForApp(appName string) string {
 		}
 	}
 
-	log.Fatalf("Could not find chart for app %s in path %s\n", appName, getBaseChartsPath())
+	log.Fatalf("\nCould not find chart for app %s in path %s \n", appName, getBaseChartsPath())
 	return ""
 }
 

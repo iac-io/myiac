@@ -1,7 +1,7 @@
 package cluster
 
 import (
-	"fmt"
+	"log"
 	"strings"
 
 	"github.com/iac-io/myiac/internal/commandline"
@@ -11,14 +11,14 @@ import (
 func GetInternalIpsForNodes() []string {
 	json := executeGetIpsCmd()
 	ips := getAllIps(json, true)
-	fmt.Printf("Internal IPs for nodes in cluster are: %v\n", ips)
+	log.Printf("Internal IPs for nodes in cluster are: %v \n", ips)
 	return ips
 }
 
 func GetAllPublicIps() []string {
 	json := executeGetIpsCmd()
 	ips := getAllIps(json, false)
-	fmt.Printf("Public IPs for nodes in cluster are: %v\n", ips)
+	log.Printf("Public IPs for nodes in cluster are: %v \n", ips)
 	return ips
 }
 
