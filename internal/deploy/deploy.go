@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	//"github.com/iac-io/myiac/internal/cluster"
 	"github.com/iac-io/myiac/internal/commandline"
 	"github.com/iac-io/myiac/internal/util"
 )
@@ -32,9 +31,6 @@ func NewDeployer() Deployer {
 // moneycolfrontend, moneycolserver, elasticsearch, traefik, traefik-dev, collections-api
 func (bd baseDeployer) Deploy(appName string, environment string, propertiesMap map[string]string, dryRun bool) {
 	helmSetParams := make(map[string]string)
-	//if appName == "traefik" || appName == "traefik-dev" {
-	//	helmSetParams = getNodesInternalIpsAsHelmParams()
-	//}
 
 	//TODO: Add properties to helmSetParams or values
 	addPropertiesToSetParams(helmSetParams, propertiesMap)
@@ -47,11 +43,6 @@ func (bd baseDeployer) Deploy(appName string, environment string, propertiesMap 
 		DryRun:        dryRun,
 	}
 	helmDeployer.Deploy(&deployment)
-
-	// Remove once the new workflow works
-	//if appName == "traefik" || appName == "traefik-dev" {
-	//	changeDevDNS()
-	//}
 }
 
 func addPropertiesToSetParams(helmSetParams map[string]string, propertiesMap map[string]string) {

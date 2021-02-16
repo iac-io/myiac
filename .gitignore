@@ -1,5 +1,4 @@
 *.json
-#charts
 bin
 .idea
 myiac
