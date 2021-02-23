@@ -1,0 +1,50 @@
+# To deploy: ./myiac deploy --project moneycol --env dev --app startup-daemonset --properties image.tag=0.5.0-app-aaa6d4e
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: startup-script
+  labels:
+    app: startup-script
+spec:
+  selector:
+    matchLabels:
+      app:  startup-script
+  template:
+    metadata:
+      labels:
+        app: startup-script
+    spec:
+      hostPID: true
+      containers:
+        - name: "startup-script"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            privileged: true
+          env:
+          - name: CHECK_INTERVAL_SECONDS
+            value: "21600"
+          - name: CF_EMAIL
+            value: "{{ .Values.dns.cloudflare.email }}"
+          - name: CF_API_KEY
+            valueFrom:
+              secretKeyRef:
+                # This must be created in the cluster beforehand
+                # ./myiac createSecret --secretName cloudflare-api-key-sec --literal CF_API_KEY=xxx
+                name: cloudflare-api-key
+                key: CF_API_KEY
+          - name: STARTUP_SCRIPT
+            value: |
+              #! /bin/bash
+              set -o errexit
+              set -o pipefail
+              set -o nounset
+              myiac setupEnvironment --provider gcp --project moneycol --keyPath /home/app/account.json --zone europe-west1-b --env dev
+
+              # CF env vars from manifest
+              echo "CF email $CF_EMAIL"
+              export CHARTS_PATH=/home/app/charts
+              myiac updateDnsWithClusterIps --dnsProvider cloudflare --domain moneycol.net
+              touch /tmp/foo
+              echo done
+          command: ["/home/app/entrypoint.sh"]

@@ -7,5 +7,5 @@ VERSION=0.5.0-app
 # Before building copy charts from ../charts
 docker build -t $REGISTRY_WITH_REPO/myiac:$VERSION -f Dockerfiles/Dockerfile . \
 --build-arg CURRENT_HELM_VERSION=2.16.1 \
---build-arg EXTRA_WORKDIR_ORIG=/workdir/charts \
+--build-arg EXTRA_WORKDIR_ORIG=/workdir/charts-dns \
 --build-arg EXTRA_WORKDIR_DEST=/home/app/charts
