@@ -8,23 +8,23 @@ import (
 )
 
 type fakeRunner struct {
-	cmd             string
-	args            []string
-	CmdLines        []string
-	output          string
-	cmdLineToOutput map[string]string
-	currentCmdLine  string
+	cmd              string
+	args             []string
+	CmdLines         []string
+	output           string
+	cmdLineToOutput  map[string]string
+	currentCmdLine   string
+	isSuppressOutput bool
 }
 
 func (fk *fakeRunner) SetupWithoutOutput(cmd string, args []string) {
 	fk.cmd = cmd
 	fk.args = args
+	currentCmdLine := fk.cmd + " " + strings.Join(fk.args, " ")
+	fk.SetupCmdLine(currentCmdLine)
 }
 
 func (fk *fakeRunner) Run() commandline.CommandOutput {
-	currentCmdLine := fk.cmd + " " + strings.Join(fk.args, " ")
-	fk.CmdLines = append(fk.CmdLines, currentCmdLine)
-
 	// every time we call Run(), check the cmdLine and return the
 	// corresponding output
 	if currentOutput, ok := fk.cmdLineToOutput[fk.currentCmdLine]; ok {
@@ -49,7 +49,8 @@ func (fk fakeRunner) Setup(cmd string, args []string) {
 func (fk fakeRunner) IgnoreError(ignoreError bool) {
 }
 
-func (fk fakeRunner) SetSuppressOutput(suppressOutput bool) {
+func (fk *fakeRunner) SetSuppressOutput(suppressOutput bool) {
+	fk.isSuppressOutput = suppressOutput
 }
 
 func (fk fakeRunner) GetCmdLines() []string {

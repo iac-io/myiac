@@ -12,7 +12,8 @@ else
   HELM_PATH="-v ${3}:/helm"
 fi
 
-
+# In order to use this image need to build it first
+# docker build -t myiac:latest Dockerfiles/DevEnv/
 docker run -ti --rm \
   --name myiac \
   -v ${PWD}/:/workdir \

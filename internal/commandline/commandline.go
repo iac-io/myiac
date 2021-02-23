@@ -126,14 +126,13 @@ func (c *commandExec) Run() CommandOutput {
 	cmdStr := string(strings.Join(cmd.Args, " "))
 	fmt.Printf("Executing [ %s ]\n", cmdStr)
 
-	// output, err := withCombinedOutput(cmd, c.IsSuppressOutput)
 	output, err := withProgress(cmd, c.IsSuppressOutput, c.ignoreError)
 
 	if err != nil && !c.ignoreError {
 		log.Fatalf("command [ %s ] failed with %s\n", cmdStr, err)
 	}
 
-	if c.ignoreError {
+	if err != nil && c.ignoreError {
 		log.Printf("Ignoring error for command [ %s ] with %v\n", cmdStr, err)
 	} else {
 		c.saveOutput(output)
