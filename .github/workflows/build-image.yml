@@ -1,0 +1,39 @@
+name: Build Docker Image
+
+on:
+  push:
+    branches: [ docker/* ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-image:
+    runs-on: ubuntu-latest
+    env:
+      TERRAFORM_V: 0.14.7
+      HELM_V: 3.5.2
+      KUBE_PROMPT_V: 1.0.11
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Build docker image
+        run: |
+          docker build -t polinux/myiac:latest \
+            --build-arg CURRENT_HELM_VERSION=$HELM_V \
+            --build-arg CURRENT_TERRAFORM_VERSION=$TERRAFORM_V \
+            --build-arg CURRENT_KUBE_PROMPT_VERSION=$KUBE_PROMPT_V \
+          -f Dockerfiles/Dockerfile .
+
+      - name: Test Image
+        run: |
+          docker run -i --rm polinux/myiac:latest myiac --help
+          docker run -i --rm polinux/myiac:latest terraform version
+          docker run -i --rm polinux/myiac:latest helm version
+          docker run -i --rm polinux/myiac:latest gcloud version
+
+      - name: Stage image
+        run: |
+          docker tag polinux/myiac:latest polinux/myiac:stage
+          docker login  -u ${{ secrets.DOCKER_HUB_USER }} -p ${{ secrets.DOCKER_HUB_PASS }}
+          docker push polinux/myiac:stage

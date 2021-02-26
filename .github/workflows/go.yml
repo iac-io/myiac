@@ -1,14 +1,14 @@
-name: Build MyIaC
+name: Go Build MyIaC
 
 on:
   push:
-    branches: [issue/*, feature/*, update/*, fix/*, master]
+    branches: [issue/*, feature/*, update/*, fix/*, docker/*, master]
   pull_request:
     branches: [ master ]
 
 jobs:
 
-  build:
+  build-test-myiac:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
