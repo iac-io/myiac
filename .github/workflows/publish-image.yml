@@ -18,8 +18,8 @@ jobs:
 
       - name: Publish image
         run: |
-          docker pull polinux/myiac:stage
           docker login  -u ${{ secrets.DOCKER_HUB_USER }} -p ${{ secrets.DOCKER_HUB_PASS }}
+          docker pull polinux/myiac:stage
           docker tag polinux/myiac:stage polinux/myiac:latest
           docker tag polinux/myiac:latest polinux/myiac:h${HELM_V}-t${TERRAFORM_V}
           docker push polinux/myiac:latest
