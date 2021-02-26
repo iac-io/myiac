@@ -1,0 +1,26 @@
+name: Publish Docker Image
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build-image:
+    runs-on: ubuntu-latest
+    env:
+      TERRAFORM_V: 0.14.7
+      HELM_V: 3.5.2
+      KUBE_PROMPT_V: 1.0.11
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Publish image
+        run: |
+          docker pull polinux/myiac:stage
+          docker login  -u ${{ secrets.DOCKER_HUB_USER }} -p ${{ secrets.DOCKER_HUB_PASS }}
+          docker tag polinux/myiac:stage polinux/myiac:latest
+          docker tag polinux/myiac:latest polinux/myiac:h${HELM_V}-t${TERRAFORM_V}
+          docker push polinux/myiac:latest
+          docker push polinux/myiac:h${HELM_V}-t${TERRAFORM_V}
