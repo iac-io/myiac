@@ -1,9 +1,12 @@
 FROM google/cloud-sdk:alpine
 
-ENV TERRAFORM_VERSION=0.12.29 \
-    HELM_VERSION=3.1.2 \
-    GOPATH="/home/app/go" \
-    KUBE_PROMPT_VERSION=1.0.10
+ARG UID=100
+ARG GID=100
+ARG TERRAFORM_VERSION=0.15.3
+ARG HELM_VERSION=3.1.2
+ARG KUBE_PROMPT_VERSION=1.0.10
+
+ENV GOPATH="/home/app/go"
 
 RUN \
     apk --update add \
@@ -31,7 +34,7 @@ RUN \
     tar -zxvf helm-v${HELM_VERSION}-linux-amd64.tar.gz && \
     mv linux-amd64/helm /usr/bin && \
     rm -f helm-v${HELM_VERSION}-linux-amd64.tar.gz && \
-    addgroup -S app && adduser -S app -G app -h /home/app && \
+    addgroup -g $GID -S app && adduser -u $UID -S app -G app -h /home/app && \
     chown -R app:app /home/app && \
     rm -rf /tmp/* /var/tmp/* /var/cache/apk/* /var/cache/distfiles/* && \
     wget https://github.com/c-bata/kube-prompt/releases/download/v${KUBE_PROMPT_VERSION}/kube-prompt_v${KUBE_PROMPT_VERSION}_linux_amd64.zip && \

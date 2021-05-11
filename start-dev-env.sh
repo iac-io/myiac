@@ -13,7 +13,14 @@ else
 fi
 
 # In order to use this image need to build it first
-# docker build -t myiac:latest Dockerfiles/DevEnv/
+# With this command created image will use current user id for app user inside image:
+# docker build -t myiac:latest --build-arg UID=$(id -u) --build-arg GID=$(id -g) Dockerfiles/DevEnv/
+# Other available args:
+# TERRAFORM_VERSION
+# HELM_VERSION
+# KUBE_PROMPT_VERSION
+
+
 docker run -ti --rm \
   --name myiac \
   -v ${PWD}/:/workdir \
