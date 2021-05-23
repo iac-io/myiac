@@ -42,3 +42,4 @@ jobs:
         run: |
           docker tag polinux/myiac:latest polinux/myiac:stage
           docker push polinux/myiac:stage
+          docker images
