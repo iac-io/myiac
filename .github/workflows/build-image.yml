@@ -10,7 +10,7 @@ jobs:
   build-image:
     runs-on: ubuntu-latest
     env:
-      TERRAFORM_V: 0.14.7
+      TERRAFORM_V: 1.0.0
       HELM_V: 3.5.2
       KUBE_PROMPT_V: 1.0.11
     steps:
