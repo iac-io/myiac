@@ -15,4 +15,5 @@ require (
 	google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
 	gopkg.in/ini.v1 v1.61.0
 	gopkg.in/yaml.v2 v2.2.8
+	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 )
