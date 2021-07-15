@@ -16,6 +16,7 @@ type CloudRunDeployment struct {
 		Annotations struct {
 			CustomDomainProvider string `yaml:"custom.domain/provider"`
 			Domain               string `yaml:"custom.domain/value"`
+			DnsProviderSecret    string `yaml:"custom.domain/secret"`
 		} `yaml:"annotations"`
 	} `yaml:"metadata"`
 	Spec struct {
@@ -54,6 +55,7 @@ func NewCloudRunDeployment(deploymentYaml string) (*cloudRunDeploy, error) {
 	return &cloudRunDeploy{cloudRunDeployment: cloudRunDeployment}, nil
 }
 
+// Input validation: https://link.medium.com/6fLKhIxQ5gb
 func (crd cloudRunDeploy) Deploy() error {
 	return nil
 }
