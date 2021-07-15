@@ -66,7 +66,8 @@ RUN \
     sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" && \
     git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k && \
     mkdir -p /home/app/.cache && \
-    mkdir -p /home/app/go
+    mkdir -p /home/app/go && \
+    /usr/bin/helm plugin install https://github.com/databus23/helm-diff --version 3.1.3
 
 ADD Dockerfiles/container-files /
 
