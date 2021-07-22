@@ -45,7 +45,7 @@ func BuildCli() {
 	dockerBuild := dockerBuildCmd(projectFlag)
 
 	createClusterCmd := createClusterCmd(projectFlag, environmentFlag, dryRunFlag, providerFlag, keyPath,
-		tfConfigPath, zoneFlag)
+		tfConfigPath, zoneFlag, prefixFlag)
 	installHelmCmd := installHelmCmd(projectFlag, environmentFlag)
 	destroyClusterCmd := destroyClusterCmd(projectFlag, environmentFlag, providerFlag, keyPath, tfConfigPath)
 
