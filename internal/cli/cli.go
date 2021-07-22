@@ -329,7 +329,7 @@ func deployAppSetup(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag
 }
 
 func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag,
-	dryRunFlag *cli.BoolFlag, providerFlag *cli.StringFlag, keyPath *cli.StringFlag, tfConfigPath *cli.StringFlag, zoneFlag *cli.StringFlag) cli.Command {
+	dryRunFlag *cli.BoolFlag, providerFlag *cli.StringFlag, keyPath *cli.StringFlag, tfConfigPath *cli.StringFlag, zoneFlag *cli.StringFlag, prefixFlag *cli.StringFlag) cli.Command {
 	return cli.Command{
 		Name:  "createCluster",
 		Usage: "Create a Kubernetes cluster through Terraform",
@@ -341,6 +341,7 @@ func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFl
 			keyPath,
 			tfConfigPath,
 			zoneFlag,
+			prefixFlag,
 		},
 		Action: func(c *cli.Context) error {
 			fmt.Printf("Validating flags for createCluster\n")
@@ -349,6 +350,7 @@ func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFl
 			_ = validateStringFlagPresence("env", c)
 			_ = validateStringFlagPresence("keyPath", c)
 			_ = validateStringFlagPresence("zone", c)
+			_ = validateStringFlagPresence("prefix", c)
 			fmt.Printf("createCluster running with flags\n")
 
 			project := c.String("project")
@@ -358,7 +360,8 @@ func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFl
 			key := c.String("keyPath")
 			tfConfigPath := c.String("tfConfigPath")
 			zone := c.String("zone")
-			clusterName := project + "-" + env
+			prefix := c.String("prefix")
+			clusterName := prefix + project + "-" + env
 
 			if provider == "gcp" {
 				//Setup ENV Variable with the json credentials
