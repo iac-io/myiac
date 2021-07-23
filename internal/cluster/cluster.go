@@ -89,12 +89,12 @@ func ValidateTFVars(tfPath string) (string, string) {
 	if _, err := os.Stat(tfPath); os.IsNotExist(err) {
 		log.Println("Running Terraform against default configuration")
 		tfvarsPath := util.CurrentExecutableDir() + "/internal/terraform/cluster"
-		tfvarsFile := tfvarsPath + "/cluster.tfvars"
+		tfvarsFile := tfvarsPath + "/terraform.tfvars"
 		return tfvarsPath, tfvarsFile
 	} else {
 		log.Printf("Runnig Terraform with %v configuration", tfPath)
 		tfvarsPath := tfPath
-		tfvarsFile := tfvarsPath + "/cluster.tfvars"
+		tfvarsFile := tfvarsPath + "/terraform.tfvars"
 		return tfvarsPath, tfvarsFile
 	}
 }
