@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TERRAFORM_V: 1.0.3
-      HELM_V: 3.5.2
+      HELM_V: 3.6.3
       KUBE_PROMPT_V: 1.0.11
     steps:
       - uses: actions/checkout@v2
