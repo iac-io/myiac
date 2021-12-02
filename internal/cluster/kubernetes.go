@@ -50,6 +50,16 @@ func getAllIps(json map[string]interface{}, internal bool) []string {
 	return ips
 }
 
+func getSingleIp() {
+	var node []interface{}
+	var ips []string
+	indexOfAddress := 1
+	status := util.GetJsonObject(node, "status")
+	addresses := util.GetJsonArray(status, "addresses")
+	ip := util.GetStringValue(addresses[indexOfAddress], "address")
+	ips = append(ips, ip)
+}
+
 func getNodesInternalIpsAsHelmParams(internalIps []string) map[string]string {
 	helmSetParams := make(map[string]string)
 	//internalIps := cluster.GetInternalIpsForNodes()

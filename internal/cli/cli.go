@@ -479,6 +479,7 @@ func setupEnvironmentCmd(providerFlag *cli.StringFlag, projectFlag *cli.StringFl
 			prefix := c.String("prefix")
 
 			clusterName := prefix + "-" + project + "-" + env
+
 			cluster.SetupProvider(providerValue, zone, clusterName, project, keyLocation, dryrun)
 
 			return nil

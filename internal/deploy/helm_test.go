@@ -7,43 +7,12 @@ import (
 	"github.com/iac-io/myiac/internal/commandline"
 )
 
-const ExistingReleasesOutput = `
-{
-	"Next": "",
-	"Releases": [{
-		"Name": "esteemed-peacock",
-		"Revision": 2,
-		"Updated": "Mon Dec  2 18:26:30 2019",
-		"Status": "DEPLOYED",
-		"Chart": "moneycolfrontend-1.0.0",
-		"AppVersion": "0.1.0",
-		"Namespace": "default"
-	}, {
-		"Name": "opining-frog",
-		"Revision": 36,
-		"Updated": "Fri Dec  6 13:41:17 2019",
-		"Status": "DEPLOYED",
-		"Chart": "traefik-1.78.4",
-		"AppVersion": "1.7.14",
-		"Namespace": "default"
-	}, {
-		"Name": "ponderous-lion",
-		"Revision": 3,
-		"Updated": "Mon Dec  2 18:26:30 2019",
-		"Status": "DEPLOYED",
-		"Chart": "moneycolserver-1.0.0",
-		"AppVersion": "1.0.0",
-		"Namespace": "default"
-	}, {
-		"Name": "solitary-ragdoll",
-		"Revision": 2,
-		"Updated": "Thu Dec  5 12:48:25 2019",
-		"Status": "DEPLOYED",
-		"Chart": "elasticsearch-1.0.0",
-		"AppVersion": "6.5.0",
-		"Namespace": "default"
-	}]
-}
+const ExistingReleasesOutput = `[
+{"name":"elastic","namespace":"default","revision":"1",
+"updated":"2021-11-24 07:34:26.817149 +0000 UTC","status":"deployed",
+"chart":"elasticsearch-1.0.0","app_version":"6.5.0"},
+{"name":"startup-daemonset","namespace":"default","revision":"1",
+"updated":"2021-11-28 18:50:57.73065 +0000 UTC","status":"deployed","chart":"startup-daemonset-1.0.0","app_version":"1.0.0"},{"name":"traefik","namespace":"default","revision":"1","updated":"2021-11-28 18:33:59.089822 +0000 UTC","status":"deployed","chart":"traefik-1.78.4","app_version":"1.7.14"}]
 `
 
 // Here we implement the CommandRunner interface with a testing mock
@@ -105,7 +74,7 @@ func TestReleaseHasFailed(t *testing.T) {
 
 	// Given: a release (2nd one) has failed status
 	releasesList := d.ParseReleasesList(ExistingReleasesOutput)
-	release := releasesList.Releases[1]
+	release := releasesList[1]
 	release.Status = "FAILED"
 
 	existingReleasesModified, err := json.Marshal(releasesList)
@@ -119,7 +88,7 @@ func TestReleaseHasFailed(t *testing.T) {
 	// When: checking if it has been deployed
 	deployed := d.DeployedReleasesExistsFor("traefik")
 
-	// Then: it shouldn't be deployed by failed
+	// Then: it shouldn't be deployed but failed
 	if deployed {
 		t.Errorf("The release is failed but got deployed\n")
 	}

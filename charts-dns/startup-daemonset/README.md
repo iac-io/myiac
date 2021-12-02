@@ -1,11 +1,13 @@
 ## Startup daemonset
 
-This is a DaemonSet used for the sync of DNS between a DNS provider and the Kubernetes nodes. This way it is avoided
-the use of Load Balancers at the expense of temporarily losing access to the cluster.
-
+This is a DaemonSet (a service/daemon that runs in each node of a Kubernetes cluster) used for syncing the IP addresses 
+of a public GKE cluster with a DNS provider (Cloudflare). This is done so that the use of Load Balancers is avoided in exchange for 
+potential (unlikely) downtime when a specific node is down.
 
 ### How it works
 
+This setup assumes that the `traefik` Ingress Controller is deployed in the cluster (see `charts/traefik` in the 
+charts repository).
 
 The `startup-daemonset` DaemonSet runs the following script every `CHECK_INTERVAL_SECONDS` (default 6h, 21600 seconds).
 
@@ -38,8 +40,8 @@ as A DNS record
 - One of the IPs is picked up, and Cloudflare is updated for every subdomain in the zone `moneycol.net` with it
 
 The operation runs every 6h, and on any node startup (DaemonSet). There's still downtime, as if the selected node whose IP
-address has been set in the DNS provider goes down, that IP won't be updated until the next Node boots. This could be detected
-by running this process again when termination event is received on the VM/GKE.
+address has been set in the DNS provider goes down, that IP won't be updated until the next Node boots. 
+Further work could be done to mitigate this, as the fact could be detected by running this process again when termination event is received on the VM/GKE.
 
 
 ### How to configure and deploy
@@ -47,7 +49,7 @@ by running this process again when termination event is received on the VM/GKE.
 For `startup-daemonset` to run the following is required:
 
 - A API key and email address for Cloudflare
-- A Kubernetes secret present in the cluster, holding the API key
+- A Kubernetes secret present in the cluster, holding the Cloudflare API key
 
 ```
 myiac createSecret --secretName cloudflare-api-key-sec --literal CF_API_KEY=xxx

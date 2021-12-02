@@ -2,12 +2,12 @@ package cluster
 
 import (
 	"fmt"
-	"log"
-	"strings"
-	"time"
-
+	"github.com/iac-io/myiac/internal/commandline"
 	"github.com/iac-io/myiac/internal/deploy"
 	"github.com/iac-io/myiac/internal/gcp"
+	"github.com/iac-io/myiac/internal/util"
+	"log"
+	"strings"
 )
 
 const (
@@ -41,25 +41,20 @@ func NewGkeClusterService(deployer deploy.Deployer, dnsService gcp.DNSService, d
 // UpdateDnsFromClusterIps this is a trick that allows having a single public IP out of a GKE cluster without using a load balancer.
 // It requires traefik as the Ingress controller.
 
-// Sequence of commands to set it up using Cloudflare as the DNS provider:
+// UpdateDnsFromClusterIps Sequence of commands to set it up using Cloudflare as the DNS provider:
+//
 // myiac setupEnvironment --provider gcp --project moneycol --keyPath /home/app/account.json --zone europe-west1-b --env dev
 // export CF_EMAIL=
 // export CF_API_KEY=
 // export CHARTS_PATH=/home/app/charts
 // myiac updateDnsFromClusterIpsCmd --dnsProvider cloudflare --domain moneycol.net
+//
 func (gcs gkeClusterService) UpdateDnsFromClusterIps(subdomains []string) error {
-	// deploy service
+
 	log.Printf("setting up service to expose single-public IP for this cluster...")
-	internalIps := GetInternalIpsForNodes()
-	helmSetParams := getNodesInternalIpsAsHelmParams(internalIps)
-	gcs.deployer.Deploy(clusterSinglePublicIpServiceName, gcs.environ, helmSetParams, false)
+	ip := FindIngressControllerNode()
 
-	log.Printf("waiting 5s for service to deploy...")
-	time.Sleep(5 * time.Second)
-
-	log.Printf("obtaining all public ips from cluster...")
-	publicIps := GetAllPublicIps()
-	aPublicIP := publicIps[0] // any public ip works for this as it's clusterIP
+	log.Printf("Ingress Controller Node IP is %s", ip)
 
 	// update DNS entry/es
 	var subdomainsToUpdate []string
@@ -69,8 +64,8 @@ func (gcs gkeClusterService) UpdateDnsFromClusterIps(subdomains []string) error 
 		}
 	}
 
-	log.Printf("Updating dns entries %v to IP %s", subdomainsToUpdate, aPublicIP)
-	err := gcs.dnsService.UpsertDNSEntries(subdomains, aPublicIP)
+	log.Printf("Updating dns entries %v to IP %s", subdomainsToUpdate, ip)
+	err := gcs.dnsService.UpsertDNSEntries(subdomains, ip)
 
 	if err != nil {
 		return fmt.Errorf("error upserting dns entries for %s: %s", subdomainsToUpdate, err)
@@ -78,4 +73,35 @@ func (gcs gkeClusterService) UpdateDnsFromClusterIps(subdomains []string) error 
 
 	log.Printf("DNS update completed")
 	return nil
+}
+
+func FindIngressControllerNode() string {
+	//cmd1 := "kubectl get pods -l app=traefik --template '{{range .items}}{{.metadata.name}}{{end}}' --field-selector status.phase=Running"
+	//cmd11 := commandline.NewCommandLine(cmd1)
+	cmd11 := commandline.New("kubectl",
+		[]string{"get", "pods", "-l", "app=traefik", "--template",
+		"'{{range .items}}{{.metadata.name}}{{end}}'", "--field-selector", "status.phase=Running"})
+	output1 := cmd11.Run()
+	podName := strings.TrimSpace(output1.Output)
+	podName = strings.ReplaceAll(podName, "'","")
+	cmd2 := fmt.Sprintf("kubectl get pod %s --template '{{.spec.nodeName}}'", podName)
+	cmd22 := commandline.NewCommandLine(cmd2)
+	output2 := cmd22.Run()
+	nodeName := strings.TrimSpace(output2.Output)
+	nodeName = strings.ReplaceAll(nodeName, "'", "")
+	cmd3 := fmt.Sprintf("kubectl get node %s -o json", nodeName)
+	cmd33 := commandline.NewCommandLine(cmd3)
+	output3 := cmd33.Run()
+	nodeJson := util.Parse(output3.Output)
+	return findNodeIp(nodeJson)
+}
+
+func findNodeIp(nodeJson map[string]interface{}) string {
+	indexOfAddress := 1
+	status := util.GetJsonObject(nodeJson, "status")
+	addresses := util.GetJsonArray(status, "addresses")
+
+	//TODO: find by type Internal/External
+	ip := util.GetStringValue(addresses[indexOfAddress], "address")
+	return ip
 }

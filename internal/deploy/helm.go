@@ -14,21 +14,15 @@ import (
 //https://quii.gitbook.io/learn-go-with-tests/go-fundamentals/mocking
 type Release struct {
 	Name       string
-	Revision   int
+	Revision   string
 	Updated    string
 	Status     string
 	Chart      string
-	AppVersion string
+	AppVersion string `json:"app_version"`
 	Namespace  string
 }
 
-type ReleasesList struct {
-	Next     string
-	Releases []*Release // using pointer as it becomes mutable (useful for tests)
-}
-
 type helmDeployer struct {
-	releases   ReleasesList
 	cmdRunner  commandline.CommandRunner
 	chartsPath string
 }
@@ -43,7 +37,6 @@ type HelmDeployment struct {
 
 func NewHelmDeployer(chartsPath string, commandRunner commandline.CommandRunner) *helmDeployer {
 	hd := new(helmDeployer)
-	hd.releases = ReleasesList{}
 	hd.cmdRunner = commandRunner
 	hd.chartsPath = chartsPath
 	return hd
@@ -59,7 +52,7 @@ func (hd *helmDeployer) ReleaseFor(appName string) string {
 	fmt.Println("Cleaning up FAILED releases")
 	hd.DeleteFailedReleases()
 
-	for _, release := range releasesList.Releases {
+	for _, release := range releasesList {
 		appNameIsPartOfChart := strings.Contains(strings.ToLower(release.Chart), appName)
 		if appNameIsPartOfChart && release.Status == "DEPLOYED" {
 			// It exists with the given name
@@ -73,7 +66,7 @@ func (hd *helmDeployer) ReleaseFor(appName string) string {
 	return ""
 }
 
-func (hd *helmDeployer) ListReleases() ReleasesList {
+func (hd *helmDeployer) ListReleases() []*Release {
 	cmdArgs := "list %s %s"
 	argsArray := util.StringTemplateToArgsArray(cmdArgs, "--output", "json")
 	hd.cmdRunner.Setup("helm", argsArray)
@@ -85,7 +78,7 @@ func (hd *helmDeployer) ListReleases() ReleasesList {
 
 func (hd *helmDeployer) DeleteFailedReleases() {
 	releasesList := hd.ListReleases()
-	for _, release := range releasesList.Releases {
+	for _, release := range releasesList {
 		if release.Status == "FAILED" {
 			fmt.Printf("Deleting FAILED Helm release -> %s\n", release.Name)
 			deleteHelmRelease(hd, release.Name)
@@ -102,14 +95,14 @@ func deleteHelmRelease(hd *helmDeployer, releaseName string) {
 	hd.cmdRunner.IgnoreError(false)
 }
 
-func (hd *helmDeployer) ParseReleasesList(jsonString string) ReleasesList {
-	var listReleases ReleasesList
+func (hd *helmDeployer) ParseReleasesList(jsonString string) []*Release {
+	var listReleases []*Release
 
 	// If there is no releases, a single space is returned
 	if jsonString == "" || len(strings.TrimSpace(jsonString)) == 0 {
 		// empty releases list
 		log.Printf("Empty list of releases found")
-		listReleases = ReleasesList{"", []*Release{}}
+		listReleases = []*Release{}
 	} else {
 		jsonData := []byte(jsonString)
 		err := json.Unmarshal(jsonData, &listReleases)
@@ -147,9 +140,12 @@ func (hd *helmDeployer) Deploy(helmDeployment *HelmDeployment) {
 	var helmArgs = ""
 	var chartPathForApp = hd.findChartForApp(helmDeployment.AppName)
 	var existingRelease = hd.ReleaseFor(helmDeployment.AppName)
-	var action = "install"
+	var action = "install %s"
 	if existingRelease != "" {
 		action = fmt.Sprintf("upgrade %s", existingRelease)
+	} else {
+		// in helm 3, install requires release name
+		action = fmt.Sprintf(action, helmDeployment.AppName)
 	}
 
 	helmArgs = fmt.Sprintf("%s %s", helmArgs, action)
