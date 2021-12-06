@@ -15,6 +15,7 @@ FROM google/cloud-sdk:alpine
 COPY --from=myiac-builder /usr/bin/myiac /usr/bin/myiac
 COPY --from=myiac-builder /workdir/*.json /home/app/
 COPY --from=myiac-builder /workdir/charts-dns /home/app/charts
+COPY --from=myiac-builder /workdir/entrypoint.sh /home/app/entrypoint.sh
 
 ARG CURRENT_HELM_VERSION=3.1.2
 ARG CURRENT_TERRAFORM_VERSION=0.12.29
@@ -53,4 +54,5 @@ RUN \
 
 USER app
 
+# This command is overriden by `startup-daemonset` if the image is used there
 CMD ['/usr/bin/myiac']
