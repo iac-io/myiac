@@ -13,7 +13,7 @@ RUN \
 FROM google/cloud-sdk:alpine
 
 COPY --from=myiac-builder /usr/bin/myiac /usr/bin/myiac
-COPY --from=myiac-builder /workdir/*.json /home/app/
+#COPY --from=myiac-builder /workdir/*.json /home/app/
 COPY --from=myiac-builder /workdir/charts-dns /home/app/charts
 COPY --from=myiac-builder /workdir/entrypoint.sh /home/app/entrypoint.sh
 
@@ -50,9 +50,31 @@ RUN \
     tar -zxvf helm-v${HELM_VERSION}-linux-amd64.tar.gz && \
     mv linux-amd64/helm /usr/bin && \
     rm -f helm-v${HELM_VERSION}-linux-amd64.tar.gz && \
-    addgroup -S app && adduser -S app -G app -h /home/app
+    addgroup -S app && adduser -S app -G app -h /home/app && \
+    chown app:app /usr/bin/myiac && \
+    chown app:app -R /home/app && \
+    rm -rf /tmp/* /var/tmp/* /var/cache/apk/* /var/cache/distfiles/* && \
+    wget https://github.com/c-bata/kube-prompt/releases/download/v${KUBE_PROMPT_VERSION}/kube-prompt_v${KUBE_PROMPT_VERSION}_linux_amd64.zip && \
+    unzip kube-prompt_v${KUBE_PROMPT_VERSION}_linux_amd64.zip && \
+    rm -f kube-prompt_v${KUBE_PROMPT_VERSION}_linux_amd64.zip && \
+    chmod +x kube-prompt && \
+    mv ./kube-prompt /usr/local/bin/kube-prompt
 
 USER app
+
+RUN \
+   sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" && \
+   git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k && \
+   mkdir -p /home/app/.cache && \
+   mkdir -p /home/app/go && \
+   /usr/bin/helm plugin install https://github.com/databus23/helm-diff --version 3.1.3
+
+ADD Dockerfiles/container-files /
+
+USER root
+
+RUN \
+   chown -R app:app /home/app
 
 # This command is overriden by `startup-daemonset` if the image is used there
 CMD ['/usr/bin/myiac']
