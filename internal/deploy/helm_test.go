@@ -63,7 +63,7 @@ func TestReleaseDeployed(t *testing.T) {
 	commandRunner := &mockCommandRunner{output: ExistingReleasesOutput}
 	d := NewHelmDeployer("charts", commandRunner)
 
-	if !d.DeployedReleasesExistsFor("traefik") {
+	if !d.DeployedReleasesExistsFor("elastic") {
 		t.Errorf("The release is deployed was incorrect, got: %v, want: %v.", false, true)
 	}
 }
@@ -75,7 +75,7 @@ func TestReleaseHasFailed(t *testing.T) {
 	// Given: a release (2nd one) has failed status
 	releasesList := d.ParseReleasesList(ExistingReleasesOutput)
 	release := releasesList[1]
-	release.Status = "FAILED"
+	release.Status = "failed"
 
 	existingReleasesModified, err := json.Marshal(releasesList)
 
@@ -86,7 +86,7 @@ func TestReleaseHasFailed(t *testing.T) {
 	commandRunner.SetOutput(string(existingReleasesModified))
 
 	// When: checking if it has been deployed
-	deployed := d.DeployedReleasesExistsFor("traefik")
+	deployed := d.DeployedReleasesExistsFor("startup-daemonset")
 
 	// Then: it shouldn't be deployed but failed
 	if deployed {

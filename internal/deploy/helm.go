@@ -54,7 +54,7 @@ func (hd *helmDeployer) ReleaseFor(appName string) string {
 
 	for _, release := range releasesList {
 		appNameIsPartOfChart := strings.Contains(strings.ToLower(release.Chart), appName)
-		if appNameIsPartOfChart && release.Status == "DEPLOYED" {
+		if appNameIsPartOfChart && release.Status == "deployed" {
 			// It exists with the given name
 			fmt.Printf("Release for app %s found. "+
 				"Name: %s, Status %s, Chart: %s\n",

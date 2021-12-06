@@ -76,8 +76,6 @@ func (gcs gkeClusterService) UpdateDnsFromClusterIps(subdomains []string) error 
 }
 
 func FindIngressControllerNode() string {
-	//cmd1 := "kubectl get pods -l app=traefik --template '{{range .items}}{{.metadata.name}}{{end}}' --field-selector status.phase=Running"
-	//cmd11 := commandline.NewCommandLine(cmd1)
 	cmd11 := commandline.New("kubectl",
 		[]string{"get", "pods", "-l", "app=traefik", "--template",
 		"'{{range .items}}{{.metadata.name}}{{end}}'", "--field-selector", "status.phase=Running"})

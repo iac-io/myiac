@@ -32,13 +32,16 @@ func (fds *fakeDnsService) UpsertDNSEntries(dnsEntries []string, ipAddress strin
 }
 
 func TestGetAllPublicIPs(t *testing.T) {
+	t.Skip("This test calls real kubectl commands")
+	subdomains := []string{"collections"}
+	ip := "35.195.98.142"
 	deployer := deploy.NewDeployer()
 	dnsService := new(fakeDnsService)
 	dnsService.On("UpsertDNSEntry").Return(nil)
-	dnsService.On("UpsertDNSEntries").Return(nil)
+	dnsService.On("UpsertDNSEntries", subdomains, ip).Return(nil)
 
 	gke := NewGkeClusterService(deployer, dnsService, "moneycol.net", "moneycol", "dev")
-	subdomains := []string{"collections"}
+
 	err := gke.UpdateDnsFromClusterIps(subdomains)
 
 	assert.Nil(t, err)
@@ -46,7 +49,7 @@ func TestGetAllPublicIPs(t *testing.T) {
 
 // go test -run TestFindIngressIp ./...
 func TestFindIngressIp(t *testing.T) {
-	t.Skip("This calls real kubectl commands")
+	t.Skip("This test calls real kubectl commands")
 	ip := FindIngressControllerNode()
 	fmt.Printf("IP %s",ip)
 	assert.NotNil(t, ip)
