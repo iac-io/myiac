@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"strings"
-
+	"os"
 	"github.com/iac-io/myiac/internal/commandline"
 	"github.com/iac-io/myiac/internal/util"
 )
@@ -14,23 +14,36 @@ import (
 //https://quii.gitbook.io/learn-go-with-tests/go-fundamentals/mocking
 type Release struct {
 	Name       string
-	Revision   int
+	Revision   string
 	Updated    string
 	Status     string
 	Chart      string
-	AppVersion string
+	AppVersion string `json:"app_version"`
 	Namespace  string
 }
 
-type ReleasesList struct {
-	Next     string
-	Releases []*Release // using pointer as it becomes mutable (useful for tests)
+type file interface {
+	Name() string
+}
+
+
+//https://talks.golang.org/2012/10things.slide#8
+//https://stackoverflow.com/questions/20923938/how-would-i-mock-a-call-to-ioutil-readfile-in-go/37035375
+//https://godocs.io/testing/fstest
+type FileReader interface {
+	ReadDir(dir string) ([]os.FileInfo, error)
+}
+
+type fileReader struct {}
+
+func (fr *fileReader) ReadDir(dir string) ([]os.FileInfo, error) {
+	return ioutil.ReadDir(dir)
 }
 
 type helmDeployer struct {
-	releases   ReleasesList
 	cmdRunner  commandline.CommandRunner
 	chartsPath string
+	fileReader FileReader
 }
 
 type HelmDeployment struct {
@@ -41,11 +54,17 @@ type HelmDeployment struct {
 	HelmValuesParams []string          // yaml filenames to pass as --values
 }
 
-func NewHelmDeployer(chartsPath string, commandRunner commandline.CommandRunner) *helmDeployer {
+func NewHelmDeployer(chartsPath string, commandRunner commandline.CommandRunner, outFileReader FileReader) *helmDeployer {
 	hd := new(helmDeployer)
-	hd.releases = ReleasesList{}
 	hd.cmdRunner = commandRunner
 	hd.chartsPath = chartsPath
+
+	if outFileReader != nil {
+		hd.fileReader = outFileReader
+	} else {
+		hd.fileReader = new(fileReader)
+	}
+	
 	return hd
 }
 
@@ -59,9 +78,9 @@ func (hd *helmDeployer) ReleaseFor(appName string) string {
 	fmt.Println("Cleaning up FAILED releases")
 	hd.DeleteFailedReleases()
 
-	for _, release := range releasesList.Releases {
+	for _, release := range releasesList {
 		appNameIsPartOfChart := strings.Contains(strings.ToLower(release.Chart), appName)
-		if appNameIsPartOfChart && release.Status == "DEPLOYED" {
+		if appNameIsPartOfChart && release.Status == "deployed" {
 			// It exists with the given name
 			fmt.Printf("Release for app %s found. "+
 				"Name: %s, Status %s, Chart: %s\n",
@@ -73,7 +92,7 @@ func (hd *helmDeployer) ReleaseFor(appName string) string {
 	return ""
 }
 
-func (hd *helmDeployer) ListReleases() ReleasesList {
+func (hd *helmDeployer) ListReleases() []*Release {
 	cmdArgs := "list %s %s"
 	argsArray := util.StringTemplateToArgsArray(cmdArgs, "--output", "json")
 	hd.cmdRunner.Setup("helm", argsArray)
@@ -85,7 +104,7 @@ func (hd *helmDeployer) ListReleases() ReleasesList {
 
 func (hd *helmDeployer) DeleteFailedReleases() {
 	releasesList := hd.ListReleases()
-	for _, release := range releasesList.Releases {
+	for _, release := range releasesList {
 		if release.Status == "FAILED" {
 			fmt.Printf("Deleting FAILED Helm release -> %s\n", release.Name)
 			deleteHelmRelease(hd, release.Name)
@@ -102,14 +121,14 @@ func deleteHelmRelease(hd *helmDeployer, releaseName string) {
 	hd.cmdRunner.IgnoreError(false)
 }
 
-func (hd *helmDeployer) ParseReleasesList(jsonString string) ReleasesList {
-	var listReleases ReleasesList
+func (hd *helmDeployer) ParseReleasesList(jsonString string) []*Release {
+	var listReleases []*Release
 
 	// If there is no releases, a single space is returned
 	if jsonString == "" || len(strings.TrimSpace(jsonString)) == 0 {
 		// empty releases list
 		log.Printf("Empty list of releases found")
-		listReleases = ReleasesList{"", []*Release{}}
+		listReleases = []*Release{}
 	} else {
 		jsonData := []byte(jsonString)
 		err := json.Unmarshal(jsonData, &listReleases)
@@ -122,7 +141,10 @@ func (hd *helmDeployer) ParseReleasesList(jsonString string) ReleasesList {
 }
 
 func (hd *helmDeployer) findChartForApp(appName string) string {
-	files, err := ioutil.ReadDir(getBaseChartsPath())
+	//files, err := ioutil.ReadDir(getBaseChartsPath())
+
+	files, err := hd.fileReader.ReadDir(getBaseChartsPath())
+	
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -147,9 +169,12 @@ func (hd *helmDeployer) Deploy(helmDeployment *HelmDeployment) {
 	var helmArgs = ""
 	var chartPathForApp = hd.findChartForApp(helmDeployment.AppName)
 	var existingRelease = hd.ReleaseFor(helmDeployment.AppName)
-	var action = "install"
+	var action = "install %s"
 	if existingRelease != "" {
 		action = fmt.Sprintf("upgrade %s", existingRelease)
+	} else {
+		// in helm 3, install requires release name
+		action = fmt.Sprintf(action, helmDeployment.AppName)
 	}
 
 	helmArgs = fmt.Sprintf("%s %s", helmArgs, action)
@@ -178,8 +203,9 @@ func (hd *helmDeployer) Deploy(helmDeployment *HelmDeployment) {
 	}
 
 	argsArray := strings.Fields(helmArgs)
-	cmd := commandline.New("helm", argsArray)
-	cmd.Run()
+	//cmd := commandline.New("helm", argsArray)
+	hd.cmdRunner.Setup("helm", argsArray)
+	hd.cmdRunner.Run()
 	fmt.Printf("Finished deploying app: %s\n\n", helmDeployment.AppName)
 }
 

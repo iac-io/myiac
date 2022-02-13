@@ -15,13 +15,14 @@ FROM google/cloud-sdk:alpine
 COPY --from=myiac-builder /usr/bin/myiac /usr/bin/myiac
 #COPY --from=myiac-builder /workdir/*.json /home/app/
 COPY --from=myiac-builder /workdir/charts-dns /home/app/charts
+COPY --from=myiac-builder /workdir/entrypoint.sh /home/app/entrypoint.sh
 
 ARG CURRENT_HELM_VERSION=3.1.2
 ARG CURRENT_TERRAFORM_VERSION=0.12.29
 ARG CURRENT_KUBE_PROMPT_VERSION=1.0.11
 ENV TERRAFORM_VERSION=$CURRENT_TERRAFORM_VERSION \
     HELM_VERSION=$CURRENT_HELM_VERSION \
-    KUBE_PROMPT_VERSION=$CURRENT_KUBE_PROMPT_VERSION
+    KUBE_PROMPT_VERSION=1.0.11
 
 RUN \
     apk --update add \
@@ -63,19 +64,17 @@ RUN \
 USER app
 
 RUN \
-    sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" && \
-    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k && \
-    mkdir -p /home/app/.cache && \
-    mkdir -p /home/app/go && \
-    /usr/bin/helm plugin install https://github.com/databus23/helm-diff --version 3.1.3
+   sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" && \
+   git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k && \
+   mkdir -p /home/app/.cache && \
+   mkdir -p /home/app/go && \
+   /usr/bin/helm plugin install https://github.com/databus23/helm-diff --version 3.1.3
 
 ADD Dockerfiles/container-files /
 
 USER root
 
 RUN \
-    chown -R app:app /home/app
-
-USER app
+   chown -R app:app /home/app
 
 CMD ['/usr/bin/myiac']

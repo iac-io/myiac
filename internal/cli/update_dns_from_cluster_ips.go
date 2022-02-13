@@ -11,7 +11,9 @@ import (
 	"github.com/urfave/cli"
 )
 
-//  myiac setupEnvironment --provider gcp --project moneycol --keyPath /home/app/account.json --zone europe-west1-b --env dev
+// updateDnsFromClusterIpsCmd
+//
+// myiac setupEnvironment --provider gcp --project moneycol --keyPath /home/app/account.json --zone europe-west1-b --env dev
 func updateDnsFromClusterIpsCmd() cli.Command {
 
 	dnsProvider := &cli.StringFlag{

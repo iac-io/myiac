@@ -477,8 +477,16 @@ func setupEnvironmentCmd(providerFlag *cli.StringFlag, projectFlag *cli.StringFl
 			dryrun := c.Bool("dry-run")
 			zone := c.String("zone")
 			prefix := c.String("prefix")
+			clusterName := c.String("clusterName")
 
-			clusterName := prefix + "-" + project + "-" + env
+            if clusterName == "" {
+                if prefix != "" {
+                   clusterName = prefix + "-" + project + "-" + env
+                } else {
+                   clusterName = project + "-" + env
+                }
+            }
+
 			cluster.SetupProvider(providerValue, zone, clusterName, project, keyLocation, dryrun)
 
 			return nil

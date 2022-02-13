@@ -35,7 +35,7 @@ spec:
                 key: CF_API_KEY
           - name: STARTUP_SCRIPT
             value: |
-              #! /bin/bash
+              #!/bin/bash
               set -o errexit
               set -o pipefail
               set -o nounset
