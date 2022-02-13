@@ -33,7 +33,7 @@ func (bd baseDeployer) Deploy(appName string, environment string, propertiesMap 
 	helmSetParams := make(map[string]string)
 	addPropertiesToSetParams(helmSetParams, propertiesMap)
 	cmdRunner := commandline.NewEmpty()
-	helmDeployer := NewHelmDeployer(bd.chartsPath, cmdRunner)
+	helmDeployer := NewHelmDeployer(bd.chartsPath, cmdRunner, nil)
 	deployment := HelmDeployment{
 		AppName:       appName,
 		Environment:   environment,

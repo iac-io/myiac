@@ -76,5 +76,4 @@ USER root
 RUN \
    chown -R app:app /home/app
 
-# This command is overriden by `startup-daemonset` if the image is used there
 CMD ['/usr/bin/myiac']

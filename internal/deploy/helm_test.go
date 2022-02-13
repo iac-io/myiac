@@ -2,8 +2,10 @@ package deploy
 
 import (
 	"encoding/json"
+	"fmt"
+	"os"
 	"testing"
-
+    "time"
 	"github.com/iac-io/myiac/internal/commandline"
 )
 
@@ -50,6 +52,7 @@ func (mcr mockCommandRunner) SetupWithoutOutput(executable string, args []string
 func (mcr mockCommandRunner) IgnoreError(ignoreError bool) {}
 
 func (mcr mockCommandRunner) Run() commandline.CommandOutput {
+	fmt.Printf("current commmandline %v\n", mcr.arguments)
 	return commandline.CommandOutput{Output: mcr.output}
 }
 
@@ -61,7 +64,7 @@ func (mcr mockCommandRunner) SetupCmdLine(cmdLine string) {
 // To run: go test -v
 func TestReleaseDeployed(t *testing.T) {
 	commandRunner := &mockCommandRunner{output: ExistingReleasesOutput}
-	d := NewHelmDeployer("charts", commandRunner)
+	d := NewHelmDeployer("charts", commandRunner, nil)
 
 	if !d.DeployedReleasesExistsFor("elastic") {
 		t.Errorf("The release is deployed was incorrect, got: %v, want: %v.", false, true)
@@ -70,9 +73,10 @@ func TestReleaseDeployed(t *testing.T) {
 
 func TestReleaseHasFailed(t *testing.T) {
 	commandRunner := &mockCommandRunner{output: ""}
-	d := NewHelmDeployer("charts", commandRunner)
+	d := NewHelmDeployer("charts", commandRunner, nil)
 
 	// Given: a release (2nd one) has failed status
+
 	releasesList := d.ParseReleasesList(ExistingReleasesOutput)
 	release := releasesList[1]
 	release.Status = "failed"
@@ -92,4 +96,56 @@ func TestReleaseHasFailed(t *testing.T) {
 	if deployed {
 		t.Errorf("The release is failed but got deployed\n")
 	}
+}
+
+//TODO: should be able to use partial interface implementation for
+// only the Name() part, which is what's needed
+type mockFileInfo struct {}
+
+func (mfi mockFileInfo) Name() string {
+	return "app"
+}
+
+func (mfi mockFileInfo) IsDir() bool {
+	return true
+}
+
+func (mfi mockFileInfo) ModTime() time.Time {
+	return time.Now()
+}
+
+func (mfi mockFileInfo) Mode() os.FileMode {
+ return os.ModeAppend
+}
+
+func (mfi mockFileInfo) Size() int64 {
+	return 1024
+}
+
+func (mfi mockFileInfo) Sys() interface{} {
+	return nil
+}
+
+
+type mockFileReader struct {
+}
+
+func (mfr *mockFileReader) ReadDir(dir string) ([]os.FileInfo, error) {
+	files := []os.FileInfo{mockFileInfo{}}
+	return files, nil
+}
+
+func TestHelm3RequiresNameForInstall(t *testing.T) {
+
+	// Given a helm setup with known chart for 'app'
+	commandRunner := &mockCommandRunner{output: ExistingReleasesOutput}
+	fileReader := &mockFileReader{}
+	d := NewHelmDeployer("charts", commandRunner, fileReader)
+	
+
+	// when deploying it
+	d.Deploy(&HelmDeployment{AppName: "app", DryRun: false, Environment: "dev"})
+
+	// it works...
+	fmt.Println(commandRunner.Output())
 }

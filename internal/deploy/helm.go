@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"strings"
-
+	"os"
 	"github.com/iac-io/myiac/internal/commandline"
 	"github.com/iac-io/myiac/internal/util"
 )
@@ -22,9 +22,28 @@ type Release struct {
 	Namespace  string
 }
 
+type file interface {
+	Name() string
+}
+
+
+//https://talks.golang.org/2012/10things.slide#8
+//https://stackoverflow.com/questions/20923938/how-would-i-mock-a-call-to-ioutil-readfile-in-go/37035375
+//https://godocs.io/testing/fstest
+type FileReader interface {
+	ReadDir(dir string) ([]os.FileInfo, error)
+}
+
+type fileReader struct {}
+
+func (fr *fileReader) ReadDir(dir string) ([]os.FileInfo, error) {
+	return ioutil.ReadDir(dir)
+}
+
 type helmDeployer struct {
 	cmdRunner  commandline.CommandRunner
 	chartsPath string
+	fileReader FileReader
 }
 
 type HelmDeployment struct {
@@ -35,10 +54,17 @@ type HelmDeployment struct {
 	HelmValuesParams []string          // yaml filenames to pass as --values
 }
 
-func NewHelmDeployer(chartsPath string, commandRunner commandline.CommandRunner) *helmDeployer {
+func NewHelmDeployer(chartsPath string, commandRunner commandline.CommandRunner, outFileReader FileReader) *helmDeployer {
 	hd := new(helmDeployer)
 	hd.cmdRunner = commandRunner
 	hd.chartsPath = chartsPath
+
+	if outFileReader != nil {
+		hd.fileReader = outFileReader
+	} else {
+		hd.fileReader = new(fileReader)
+	}
+	
 	return hd
 }
 
@@ -115,7 +141,10 @@ func (hd *helmDeployer) ParseReleasesList(jsonString string) []*Release {
 }
 
 func (hd *helmDeployer) findChartForApp(appName string) string {
-	files, err := ioutil.ReadDir(getBaseChartsPath())
+	//files, err := ioutil.ReadDir(getBaseChartsPath())
+
+	files, err := hd.fileReader.ReadDir(getBaseChartsPath())
+	
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -174,8 +203,9 @@ func (hd *helmDeployer) Deploy(helmDeployment *HelmDeployment) {
 	}
 
 	argsArray := strings.Fields(helmArgs)
-	cmd := commandline.New("helm", argsArray)
-	cmd.Run()
+	//cmd := commandline.New("helm", argsArray)
+	hd.cmdRunner.Setup("helm", argsArray)
+	hd.cmdRunner.Run()
 	fmt.Printf("Finished deploying app: %s\n\n", helmDeployment.AppName)
 }
 
