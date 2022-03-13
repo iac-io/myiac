@@ -3,12 +3,11 @@ package deploy
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/iac-io/myiac/internal/commandline"
+	"github.com/iac-io/myiac/internal/util"
 	"io/ioutil"
 	"log"
 	"strings"
-	"os"
-	"github.com/iac-io/myiac/internal/commandline"
-	"github.com/iac-io/myiac/internal/util"
 )
 
 //https://quii.gitbook.io/learn-go-with-tests/go-fundamentals/mocking
@@ -31,13 +30,46 @@ type file interface {
 //https://stackoverflow.com/questions/20923938/how-would-i-mock-a-call-to-ioutil-readfile-in-go/37035375
 //https://godocs.io/testing/fstest
 type FileReader interface {
-	ReadDir(dir string) ([]os.FileInfo, error)
+	ReadDir(dir string) ([]NamedFile, error)
+}
+
+type NamedFile interface {
+	Name() string
+}
+
+type namedFile struct {
+	name string
+}
+
+func (nf namedFile) Name() string {
+	return nf.name
 }
 
 type fileReader struct {}
 
-func (fr *fileReader) ReadDir(dir string) ([]os.FileInfo, error) {
-	return ioutil.ReadDir(dir)
+// ReadDir is the real implementation of the `ioutil` to read the contents
+// of a directory.
+//
+// In this case only the name of the file is important
+// so that is wrapped into a NamedFile interface (just Name() method).
+// This way we make the code testable via fine-tuned interfaces
+//
+// See: https://stackoverflow.com/a/55133441/2128730
+func (fr *fileReader) ReadDir(dir string) ([]NamedFile, error) {
+	fileInfos, err := ioutil.ReadDir(dir)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var namedFileInfos = make([]NamedFile, len(fileInfos))
+	for _, fileInfo := range fileInfos {
+		namedFileInfo := namedFile{
+			name: fileInfo.Name(),
+		}
+		namedFileInfos = append(namedFileInfos, namedFileInfo)
+	}
+	return namedFileInfos, nil
 }
 
 type helmDeployer struct {
@@ -59,9 +91,12 @@ func NewHelmDeployer(chartsPath string, commandRunner commandline.CommandRunner,
 	hd.cmdRunner = commandRunner
 	hd.chartsPath = chartsPath
 
+	
 	if outFileReader != nil {
+		fmt.Printf("Setting up an outer fileReader %v\n", outFileReader)
 		hd.fileReader = outFileReader
 	} else {
+		fmt.Printf("using internal fileReader \n")
 		hd.fileReader = new(fileReader)
 	}
 	
@@ -141,7 +176,6 @@ func (hd *helmDeployer) ParseReleasesList(jsonString string) []*Release {
 }
 
 func (hd *helmDeployer) findChartForApp(appName string) string {
-	//files, err := ioutil.ReadDir(getBaseChartsPath())
 
 	files, err := hd.fileReader.ReadDir(getBaseChartsPath())
 	
@@ -150,6 +184,8 @@ func (hd *helmDeployer) findChartForApp(appName string) string {
 	}
 
 	for _, file := range files {
+		fmt.Printf("Base charts %v\n", getBaseChartsPath())
+		fmt.Printf("Value of file %v", file)
 		chartFolder := file.Name()
 		fmt.Printf("Checking chart folder: %s\n", chartFolder)
 		appNameNormalized := normalizeName(appName)
