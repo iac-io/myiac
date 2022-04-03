@@ -33,7 +33,7 @@ myiac help
 myiac [subcommand] help
 ```
 
-## Known issues & work in progress
+## Known issues & work in progress
 
 Currently only the following subcommands are working as expected in the `master` branch (the project is undergoing a massive cleanup & refactor):
 

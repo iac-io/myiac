@@ -28,7 +28,8 @@ func NewDeployer() Deployer {
 	return &baseDeployer{chartsPath: getBaseChartsPath()}
 }
 
-// moneycolfrontend, moneycolserver, elasticsearch, traefik, traefik-dev, collections-api
+// Deploy deploys applications in a Kubernetes cluster using helm
+// currently works with moneycolfrontend, moneycolserver, elasticsearch, traefik, traefik-dev, collections-api
 func (bd baseDeployer) Deploy(appName string, environment string, propertiesMap map[string]string, dryRun bool) {
 	helmSetParams := make(map[string]string)
 	addPropertiesToSetParams(helmSetParams, propertiesMap)

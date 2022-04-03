@@ -56,7 +56,7 @@ func BuildCli() {
 	cryptCmd := cryptCmd(projectFlag)
 	createCertCmd := createCertCmd()
 
-	updateDnsFromClusterIps := updateDnsFromClusterIpsCmd()
+	//updateDnsFromClusterIps := updateDnsFromClusterIpsCmd()
 
 	app.Commands = []cli.Command{
 		setupEnvironment,
@@ -71,7 +71,7 @@ func BuildCli() {
 		cryptCmd,
 		createCertCmd,
 		resizePoolCmd,
-		updateDnsFromClusterIps,
+		//updateDnsFromClusterIps,
 	}
 
 	err := app.Run(os.Args)
@@ -328,7 +328,7 @@ func deployAppSetup(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag
 }
 
 func createClusterCmd(projectFlag *cli.StringFlag, environmentFlag *cli.StringFlag,
-	dryRunFlag *cli.BoolFlag, providerFlag *cli.StringFlag, keyPath *cli.StringFlag, tfConfigPath *cli.StringFlag, zoneFlag *cli.StringFlag,  clusterPrefix *cli.StringFlag) cli.Command {
+	dryRunFlag *cli.BoolFlag, providerFlag *cli.StringFlag, keyPath *cli.StringFlag, tfConfigPath *cli.StringFlag, zoneFlag *cli.StringFlag, clusterPrefix *cli.StringFlag) cli.Command {
 	return cli.Command{
 		Name:  "createCluster",
 		Usage: "Create a Kubernetes cluster through Terraform",
@@ -479,13 +479,13 @@ func setupEnvironmentCmd(providerFlag *cli.StringFlag, projectFlag *cli.StringFl
 			prefix := c.String("prefix")
 			clusterName := c.String("clusterName")
 
-            if clusterName == "" {
-                if prefix != "" {
-                   clusterName = prefix + "-" + project + "-" + env
-                } else {
-                   clusterName = project + "-" + env
-                }
-            }
+			if clusterName == "" {
+				if prefix != "" {
+					clusterName = prefix + "-" + project + "-" + env
+				} else {
+					clusterName = project + "-" + env
+				}
+			}
 
 			cluster.SetupProvider(providerValue, zone, clusterName, project, keyLocation, dryrun)
 

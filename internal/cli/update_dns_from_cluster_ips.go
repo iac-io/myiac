@@ -14,7 +14,8 @@ import (
 // updateDnsFromClusterIpsCmd
 //
 // myiac setupEnvironment --provider gcp --project moneycol --keyPath /home/app/account.json --zone europe-west1-b --env dev
-func updateDnsFromClusterIpsCmd() cli.Command {
+// DEPRECATED
+func updateDnsFromClusterIpsCmdOlder() cli.Command {
 
 	dnsProvider := &cli.StringFlag{
 		Name:  "dnsProvider, dp",
